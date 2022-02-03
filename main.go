@@ -6,6 +6,7 @@ import (
   "io/ioutil"
 )
 
+// TODO: Implement the logic described in README.md
 func main() {
   compact := flag.Bool("compact", false, "Exclude identical lines from output")
   flag.Parse()
