@@ -2,18 +2,24 @@ package main
 
 import (
   "flag"
-  "github.com/SmartBear/lhdiff"
-  "io/ioutil"
+  "fmt"
 )
 
 // TODO: Implement the logic described in README.md
 func main() {
-  compact := flag.Bool("compact", false, "Exclude identical lines from output")
+  organizationId := flag.String("organization-id", "", "OneReport organization id")
+  remote := flag.String("remote", "", "Git remote (the repo url)")
+  leftRevision := flag.String("left-revision", "", "Left/old git revision")
+  rightRevision := flag.String("right-revision", "", "Right/new git revision")
+  password := flag.String("password", "", "OneReport password")
+  sourceGlob := flag.String("source", "", "Glob to the source files to analyse")
+  url := flag.String("url", "https://one-report.vercel.app", "Git remote (the repo url)")
   flag.Parse()
-  leftFile := flag.Arg(0)
-  rightFile := flag.Arg(1)
-  left, _ := ioutil.ReadFile(leftFile)
-  right, _ := ioutil.ReadFile(rightFile)
-  linePairs, leftCount, newRightLines := lhdiff.Lhdiff(string(left), string(right), 4)
-  lhdiff.PrintLinePairs(linePairs, leftCount, newRightLines, !*compact)
+  fmt.Printf("org            %s\n", *organizationId)
+  fmt.Printf("remote         %s\n", *remote)
+  fmt.Printf("left-revision  %s\n", *leftRevision)
+  fmt.Printf("right-revision %s\n", *rightRevision)
+  fmt.Printf("password       %s\n", *password)
+  fmt.Printf("source         %s\n", *sourceGlob)
+  fmt.Printf("url            %s\n", *url)
 }

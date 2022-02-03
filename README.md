@@ -32,15 +32,18 @@ Download an executable from the [releases](https://github.com/SmartBear/one-repo
 
 ## Command Line
 
-    Usage: one-report-changeset-publisher [options]
-
-    Options:
-      -o, --organization-id <id>       OneReport organization id
-      -g, --remote                     Git remote (the repo url)
-      -f, --left-revision <revision>   Left/old git revision 
-      -r, --right-revision <revision>  right/new git revision
-      -p, --password <password>        OneReport password
-      -s, --source <glob...>           Glob to the source files to analyse
-      -u, --url <url>                  OneReport URL (default: "https://one-report.vercel.app")
-      -h, --help                       display help for command
-
+    Usage of one-report-changeset-publisher:
+      -left-revision string
+            Left/old git revision
+      -organization-id string
+            OneReport organization id
+      -password string
+            OneReport password
+      -remote string
+            Git remote (the repo url)
+      -right-revision string
+            Right/new git revision
+      -source string
+            Glob to the source files to analyse
+      -url string
+            Git remote (the repo url) (default "https://one-report.vercel.app")
