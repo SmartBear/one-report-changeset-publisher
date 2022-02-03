@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/SmartBear/lhdiff"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -28,6 +29,8 @@ func main() {
 	fmt.Printf("source         %s\n", *sourceGlob)
 	fmt.Printf("url            %s\n", *url)
 	fmt.Println()
+
+	contextSize := 4
 
 	r, err := git.PlainOpen(".")
 	check(err, "Could not open local repo\n")
@@ -55,22 +58,21 @@ func main() {
 			leftBinary, err := leftFile.IsBinary()
 			check(err, "Couldn't check binary status of file %s in %s\n", change.From.Name, leftRevision)
 
-			rightFile, err := rightTree.File(change.From.Name)
+			rightFile, err := rightTree.File(change.To.Name)
 			check(err, "Couldn't access file %s in %s\n", change.To.Name, rightRevision)
 			rightBinary, err := rightFile.IsBinary()
-			check(err, "Couldn't check binary status of file %s in %s\n", change.From.Name, leftRevision)
+			check(err, "Couldn't check binary status of file %s in %s\n", change.To.Name, leftRevision)
 
 			if !leftBinary && !rightBinary {
 				leftContents, err := leftFile.Contents()
 				check(err, "Couldn't read file %s in %s\n", change.From.Name, leftRevision)
 
 				rightContents, err := rightFile.Contents()
-				check(err, "Couldn't read file %s in %s\n", change.From.Name, leftRevision)
+				check(err, "Couldn't read file %s in %s\n", change.To.Name, leftRevision)
 
-				fmt.Println("====== left =====")
-				fmt.Println(leftContents)
-				fmt.Println("====== right =====")
-				fmt.Println(rightContents)
+				linePairs, leftCount, newRightLines := lhdiff.Lhdiff(leftContents, rightContents, contextSize)
+				fmt.Printf("# %s -> %s\n", change.From.Name, change.To.Name)
+				lhdiff.PrintLinePairs(linePairs, leftCount, newRightLines, false)
 			}
 		default:
 			panic(fmt.Sprintf("unsupported action: %d", action))
