@@ -4,7 +4,10 @@ go 1.17
 
 require github.com/go-git/go-git/v5 v5.4.2
 
-require github.com/SmartBear/lhdiff v0.0.4
+require (
+	github.com/SmartBear/lhdiff v0.0.5
+	github.com/onsi/gomega v1.18.1
+)
 
 require (
 	github.com/Microsoft/go-winio v0.4.16 // indirect
@@ -24,7 +27,9 @@ require (
 	github.com/sourcegraph/go-diff v0.6.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
-	golang.org/x/net v0.0.0-20210326060303-6b1517762897 // indirect
-	golang.org/x/sys v0.0.0-20210502180810-71e4cd670f79 // indirect
+	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/text v0.3.6 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

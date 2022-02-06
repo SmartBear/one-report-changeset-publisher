@@ -7,12 +7,13 @@ Here is an example changeset:
 ```json
 {
   "repo": "git@github.com:MyOrg/my-project.git",
-  "left": "400a62e39d39d231d8160002dfb7ed95a004278b",
-  "right": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
+  "fromRev": "400a62e39d39d231d8160002dfb7ed95a004278b",
+  "toRev": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
   "files": [
     {
-      "path": "src/main.rb",
-      "lines": [
+      "fromPath": "src/main.rb",
+      "toPath": "src/main.rb",
+      "mapping": [
         [10, 11],
         [11, 12],
         [12, null],
@@ -33,17 +34,17 @@ Download an executable from the [releases](https://github.com/SmartBear/one-repo
 ## Command Line
 
     Usage of one-report-changeset-publisher:
-      -left-revision string
-            Left/old git revision
+      -from-rev string
+            From git revision
       -organization-id string
             OneReport organization id
       -password string
             OneReport password
       -remote string
             Git remote (the repo url)
-      -right-revision string
-            Right/new git revision
       -source string
             Glob to the source files to analyse
+      -to-rev string
+            To git revision
       -url string
             Git remote (the repo url) (default "https://one-report.vercel.app")
