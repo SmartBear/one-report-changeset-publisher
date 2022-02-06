@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/SmartBear/one-report-changeset-publisher"
+	ignore "github.com/sabhiram/go-gitignore"
 	"os"
 )
 
@@ -15,19 +16,18 @@ func main() {
 	fromRev := flag.String("from-rev", "", "From git revision")
 	toRev := flag.String("to-rev", "", "To git revision")
 	password := flag.String("password", "", "OneReport password")
-	sourceGlob := flag.String("source", "", "Glob to the source changes to analyse")
+	ignoreGlob := flag.String("gitIgnore", "", "Glob of files to gitIgnore")
 	url := flag.String("url", "https://one-report.vercel.app", "Git remote (the repo url)")
 	flag.Parse()
 	fmt.Printf("org      %s\n", *organizationId)
-	fmt.Printf("remote   %s\n", *remote)
-	fmt.Printf("from-rev %s\n", *fromRev)
-	fmt.Printf("to-rev   %s\n", *toRev)
 	fmt.Printf("password %s\n", *password)
-	fmt.Printf("source   %s\n", *sourceGlob)
+	fmt.Printf("source   %s\n", *ignoreGlob)
 	fmt.Printf("url      %s\n", *url)
 	fmt.Println()
 
-	err, changeset := changesets.MakeChangeset(*fromRev, *toRev, *remote)
+	gitIgnore, err := ignore.CompileIgnoreFile(".onereportignore")
+	check(err)
+	err, changeset := changesets.MakeChangeset(*fromRev, *toRev, *remote, gitIgnore)
 	check(err)
 	enc := json.NewEncoder(os.Stdout)
 	err = enc.Encode(changeset)

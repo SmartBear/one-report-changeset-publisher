@@ -7,6 +7,7 @@ require github.com/go-git/go-git/v5 v5.4.2
 require (
 	github.com/SmartBear/lhdiff v0.0.5
 	github.com/onsi/gomega v1.18.1
+	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 )
 
 require (

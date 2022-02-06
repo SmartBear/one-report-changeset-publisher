@@ -42,9 +42,16 @@ Download an executable from the [releases](https://github.com/SmartBear/one-repo
             OneReport password
       -remote string
             Git remote (the repo url)
-      -source string
-            Glob to the source files to analyse
       -to-rev string
             To git revision
       -url string
             Git remote (the repo url) (default "https://one-report.vercel.app")
+
+## Configuration
+
+### `.onereportignore`
+
+All files specified by `.onereportignore` will be omitted from the published changeset. The file follows the 
+[.gitignore pattern format](https://git-scm.com/docs/gitignore#_pattern_format)
+
+Files that have no impact on test results should be added to this file.

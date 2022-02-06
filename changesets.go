@@ -7,6 +7,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
+	"github.com/sabhiram/go-gitignore"
 )
 
 type Changeset struct {
@@ -22,7 +23,7 @@ type Change struct {
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangeset(fromRev string, toRev string, remote string) (error, *Changeset) {
+func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignore.GitIgnore) (error, *Changeset) {
 	contextSize := 4
 
 	r, err := git.PlainOpen(".")
@@ -58,6 +59,9 @@ func MakeChangeset(fromRev string, toRev string, remote string) (error, *Changes
 		case merkletrie.Delete:
 			// TODO
 		case merkletrie.Modify:
+			if gitIgnore.MatchesPath(gitChange.To.Name) {
+				continue
+			}
 			leftFile, err := leftTree.File(gitChange.From.Name)
 			if err != nil {
 				return err, nil
