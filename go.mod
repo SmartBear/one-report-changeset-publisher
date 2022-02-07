@@ -2,15 +2,14 @@ module github.com/SmartBear/one-report-changeset-publisher
 
 go 1.17
 
-require github.com/go-git/go-git/v5 v5.4.2
-
 require (
-	github.com/SmartBear/lhdiff v0.0.5
-	github.com/onsi/gomega v1.18.1
+	github.com/go-git/go-git/v5 v5.4.2
+	github.com/SmartBear/lhdiff v0.1.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 )
 
 require (
+	github.com/onsi/gomega v1.18.1
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect

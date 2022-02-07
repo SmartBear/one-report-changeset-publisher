@@ -1,4 +1,4 @@
-package changesets
+package publisher
 
 import (
 	"encoding/json"
