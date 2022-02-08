@@ -10,23 +10,23 @@ Here is an example changeset:
   "remote": "git@github.com:MyOrg/my-project.git",
   "fromRev": "400a62e39d39d231d8160002dfb7ed95a004278b",
   "toRev": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
-  "files": [
+  "changes": [
     {
       "fromPath": "src/main.rb",
       "toPath": "src/main.rb",
-      "mapping": [
+      "lineMappings": [
         [10, 11],
         [11, 12],
-        [12, null],
-        [null, 10]
+        [12, -1],
+        [-1, 10]
       ]
     }
   ]
 }
 ```
 
-The payload does not include any source code (apart from file paths). The `lines` array is a list of lines that have changed
-using a `[leftLineNumber, rightLineNumber]` mapping.
+The payload does not include any source code (apart from file paths). The `lineMappings` array is a list of lines that have changed
+using a `[leftLineNumber, rightLineNumber]` mapping. `-1` means the line was not present. See 
 
 ## Installation
 
