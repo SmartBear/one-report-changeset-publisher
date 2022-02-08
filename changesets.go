@@ -1,8 +1,6 @@
 package publisher
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/SmartBear/lhdiff"
 	"github.com/go-git/go-git/v5"
@@ -10,8 +8,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
 	"github.com/sabhiram/go-gitignore"
-	"net/http"
-	"net/url"
 )
 
 type Changeset struct {
@@ -27,27 +23,27 @@ type Change struct {
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignore.GitIgnore) (error, *Changeset) {
+func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignore.GitIgnore) (*Changeset, error) {
 	contextSize := 4
 
 	r, err := git.PlainOpen(".")
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	leftTree, err := getTree(r, fromRev)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	rightTree, err := getTree(r, toRev)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	gitChanges, err := leftTree.Diff(rightTree)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	changes := make([]*Change, 0)
@@ -55,7 +51,7 @@ func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignor
 	for _, gitChange := range gitChanges {
 		action, err := gitChange.Action()
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 		switch action {
 		case merkletrie.Insert:
@@ -68,36 +64,36 @@ func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignor
 			}
 			leftFile, err := leftTree.File(gitChange.From.Name)
 			if err != nil {
-				return err, nil
+				return nil, err
 			}
 			leftBinary, err := leftFile.IsBinary()
 			if err != nil {
-				return err, nil
+				return nil, err
 			}
 
 			rightFile, err := rightTree.File(gitChange.To.Name)
 			if err != nil {
-				return err, nil
+				return nil, err
 			}
 			rightBinary, err := rightFile.IsBinary()
 			if err != nil {
-				return err, nil
+				return nil, err
 			}
 
 			if !leftBinary && !rightBinary {
 				leftContents, err := leftFile.Contents()
 				if err != nil {
-					return err, nil
+					return nil, err
 				}
 
 				rightContents, err := rightFile.Contents()
 				if err != nil {
-					return err, nil
+					return nil, err
 				}
 
 				mapping, err := lhdiff.Lhdiff(leftContents, rightContents, contextSize, false)
 				if err != nil {
-					return err, nil
+					return nil, err
 				}
 
 				change := &Change{
@@ -118,7 +114,7 @@ func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignor
 		ToRev:   toRev,
 		Changes: changes,
 	}
-	return err, changeset
+	return changeset, nil
 }
 
 func getTree(r *git.Repository, revision string) (*object.Tree, error) {
@@ -137,37 +133,4 @@ func getTree(r *git.Repository, revision string) (*object.Tree, error) {
 		return nil, err
 	}
 	return tree, nil
-}
-
-func Publish(changeset *Changeset, organizationId string, password string, url string) error {
-	req, err := MakeRequest(changeset, organizationId, password, url)
-	if err != nil {
-		return err
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	if res.StatusCode != 201 {
-		return fmt.Errorf("expected 201, got %d", res.StatusCode)
-	}
-	return nil
-}
-
-func MakeRequest(changeset *Changeset, organizationId string, password string, baseUrl string) (*http.Request, error) {
-	body, err := json.MarshalIndent(changeset, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	u, err := url.Parse(baseUrl)
-	if err != nil {
-		return nil, err
-	}
-	u.Path = "/api/organization/" + url.PathEscape(organizationId) + "/changeset"
-	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	return req, nil
 }

@@ -4,18 +4,22 @@ import (
 	"encoding/json"
 	"github.com/onsi/gomega"
 	"github.com/sabhiram/go-gitignore"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestMakeChangesetNoIgnore(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
-	_, changeset := MakeChangeset(
+	changeset, err := MakeChangeset(
 		"0ac4dd0d5519bac733f9fcd13792c586317b544d",
 		"8bb476618aafc35eafa6beb7f63e286efa3df5d4",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		ignore.CompileIgnoreLines(),
 	)
-	j, _ := json.MarshalIndent(changeset, "", "  ")
+	assert.NoError(t, err)
+
+	j, err := json.MarshalIndent(changeset, "", "  ")
+	assert.NoError(t, err)
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
@@ -296,13 +300,15 @@ func TestMakeChangesetNoIgnore(t *testing.T) {
 
 func TestMakeChangesetWithIgnore(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
-	_, changeset := MakeChangeset(
+	changeset, err := MakeChangeset(
 		"0ac4dd0d5519bac733f9fcd13792c586317b544d",
 		"8bb476618aafc35eafa6beb7f63e286efa3df5d4",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		ignore.CompileIgnoreLines("*.go", "*.sum"),
 	)
-	j, _ := json.MarshalIndent(changeset, "", "  ")
+	assert.NoError(t, err)
+	j, err := json.MarshalIndent(changeset, "", "  ")
+	assert.NoError(t, err)
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
-	"os"
 	"strings"
 )
 
@@ -16,13 +15,19 @@ func ExamplePublish() {
 		ToRev:   "bbb",
 		Changes: make([]*Change, 0),
 	}
-	req, err := MakeRequest(changeset, "1CCC7924-051C-496E-8467-D494C1C37B2A", "s3cr3t", "https://host.com")
-	printErr(err)
+	req, err := MakeRequest(changeset, "1CCC7924-051C-496E-8467-D494C1C37B2A", "https://host.com", "anyone", "secret")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 	res := httptest.NewRecorder()
 
 	ChangesetHandler := func(res http.ResponseWriter, req *http.Request) {
 		txt, err := httputil.DumpRequest(req, true)
-		printErr(err)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
 		dumpedReq := strings.ReplaceAll(string(txt), "\r\n", "\n")
 		fmt.Print(dumpedReq)
 	}
@@ -31,7 +36,8 @@ func ExamplePublish() {
 	//Output:
 	// POST /api/organization/1CCC7924-051C-496E-8467-D494C1C37B2A/changeset HTTP/1.1
 	// Host: host.com
-	// Content-Type: application/json
+	// Authorization: Basic YW55b25lOnNlY3JldA==
+	// Content-Type: application/vnd.smartbear.onereport.changeset.v1+json
 	//
 	// {
 	//   "remote": "some-remote",
@@ -39,10 +45,4 @@ func ExamplePublish() {
 	//   "toRev": "bbb",
 	//   "changes": []
 	// }
-}
-
-func printErr(err error) {
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err.Error())
-	}
 }
