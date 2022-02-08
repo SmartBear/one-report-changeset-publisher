@@ -11,24 +11,59 @@ import (
 )
 
 type Changeset struct {
-	Remote  string  `json:"remote"`
-	FromRev string  `json:"fromRev"`
+	Remote  string    `json:"remote"`
+	FromRev string    `json:"fromRev"`
 	ToRev   string    `json:"toRev"`
 	Changes []*Change `json:"changes"`
 }
 
 type Change struct {
-	FromPath string  `json:"fromPath"`
+	FromPath     string  `json:"fromPath"`
 	ToPath       string  `json:"toPath"`
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignore.GitIgnore) (*Changeset, error) {
+func MakeChangeset(fromRev string, toRev string, remote string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (*Changeset, error) {
 	contextSize := 4
 
 	r, err := git.PlainOpen(".")
 	if err != nil {
 		return nil, err
+	}
+
+	if remote == "" {
+		config, err := r.Config()
+		if err != nil {
+			return nil, err
+		}
+		if remoteConfig, ok := config.Remotes["origin"]; ok {
+			remote = remoteConfig.URLs[0]
+		} else {
+			return nil, fmt.Errorf("please specify --remote since this repo does not have an origin remote")
+		}
+	}
+
+	if toRev == "" {
+		head, err := r.Head()
+		if err != nil {
+			return nil, err
+		}
+		toRev = head.Hash().String()
+	}
+
+	if fromRev == "" {
+		toCommit, err := r.CommitObject(plumbing.NewHash(toRev))
+		if err != nil {
+			return nil, err
+		}
+		if len(toCommit.ParentHashes) != 1 {
+			return nil, fmt.Errorf(
+				"please specify --fromRev - the toRev=%s has %d parents, and I can only guess if there is exactly 1",
+				toRev,
+				len(toCommit.ParentHashes),
+			)
+		}
+		fromRev = toCommit.ParentHashes[0].String()
 	}
 
 	leftTree, err := getTree(r, fromRev)
@@ -59,7 +94,10 @@ func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignor
 		case merkletrie.Delete:
 			// TODO
 		case merkletrie.Modify:
-			if gitIgnore.MatchesPath(gitChange.To.Name) {
+			if excluded != nil && excluded.MatchesPath(gitChange.To.Name) {
+				continue
+			}
+			if included != nil && !included.MatchesPath(gitChange.To.Name) {
 				continue
 			}
 			leftFile, err := leftTree.File(gitChange.From.Name)

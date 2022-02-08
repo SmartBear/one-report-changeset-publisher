@@ -15,6 +15,7 @@ func TestMakeChangesetNoIgnore(t *testing.T) {
 		"8bb476618aafc35eafa6beb7f63e286efa3df5d4",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		ignore.CompileIgnoreLines(),
+		nil,
 	)
 	assert.NoError(t, err)
 
@@ -305,6 +306,73 @@ func TestMakeChangesetWithIgnore(t *testing.T) {
 		"8bb476618aafc35eafa6beb7f63e286efa3df5d4",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		ignore.CompileIgnoreLines("*.go", "*.sum"),
+		nil,
+	)
+	assert.NoError(t, err)
+	j, err := json.MarshalIndent(changeset, "", "  ")
+	assert.NoError(t, err)
+
+	const expected = `{
+	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+	  "fromRev": "0ac4dd0d5519bac733f9fcd13792c586317b544d",
+	  "toRev": "8bb476618aafc35eafa6beb7f63e286efa3df5d4",
+	  "changes": [
+		{
+		  "fromPath": "go.mod",
+		  "toPath": "go.mod",
+		  "lineMappings": [
+			[
+			  4,
+			  -1
+			],
+			[
+			  5,
+			  -1
+			],
+			[
+			  6,
+			  -1
+			],
+			[
+			  7,
+			  -1
+			],
+			[
+			  8,
+			  -1
+			],
+			[
+			  9,
+			  -1
+			],
+			[
+			  10,
+			  -1
+			],
+			[
+			  11,
+			  -1
+			],
+			[
+			  12,
+			  -1
+			]
+		  ]
+		}
+	  ]
+	}`
+
+	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
+}
+
+func TestMakeChangesetWithInclude(t *testing.T) {
+	g := gomega.NewGomegaWithT(t)
+	changeset, err := MakeChangeset(
+		"0ac4dd0d5519bac733f9fcd13792c586317b544d",
+		"8bb476618aafc35eafa6beb7f63e286efa3df5d4",
+		"git@github.com:SmartBear/one-report-changeset-publisher.git",
+		nil,
+		ignore.CompileIgnoreLines("*.mod"),
 	)
 	assert.NoError(t, err)
 	j, err := json.MarshalIndent(changeset, "", "  ")
