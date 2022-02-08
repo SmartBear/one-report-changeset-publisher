@@ -11,7 +11,7 @@ import (
 
 func main() {
 	organizationId := flag.String("organization-id", "", "OneReport organization id")
-	remote := flag.String("remote", "", "Git remote (default is the first remote in .git/config)")
+	remote := flag.String("remote", "", "Git remote (default is the origin remote in .git/config)")
 	fromRev := flag.String("from-rev", "", "From git revision (default is the single parent of to-rev)")
 	toRev := flag.String("to-rev", "", "To git revision (default is the HEAD revision)")
 	username := flag.String("username", "", "OneReport username")
@@ -20,11 +20,10 @@ func main() {
 	url := flag.String("url", "https://one-report.vercel.app", "OneReport url")
 	flag.Parse()
 
-	gitIgnore, err := ignore.CompileIgnoreFile(".onereportignore")
-	if err != nil {
-		gitIgnore = ignore.CompileIgnoreLines()
-	}
-	changeset, err := publisher.MakeChangeset(*fromRev, *toRev, *remote, gitIgnore)
+	excluded, _ := ignore.CompileIgnoreFile(".onereportignore")
+	included, _ := ignore.CompileIgnoreFile(".onereportinclude")
+
+	changeset, err := publisher.MakeChangeset(*fromRev, *toRev, *remote, excluded, included)
 	check(err)
 	if *dryRun {
 		bytes, err := json.MarshalIndent(changeset, "", "  ")

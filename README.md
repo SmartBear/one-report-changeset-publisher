@@ -46,7 +46,7 @@ Download an executable from the [releases](https://github.com/SmartBear/one-repo
       -password string
             OneReport password
       -remote string
-            Git remote (default is the first remote in .git/config)
+            Git remote (default is the origin remote in .git/config)
       -to-rev string
             To git revision (default is the HEAD revision)
       -url string
@@ -56,9 +56,11 @@ Download an executable from the [releases](https://github.com/SmartBear/one-repo
 
 ## Configuration
 
-### `.onereportignore`
+### Excluding / Including files
 
-All files specified by `.onereportignore` will be omitted from the published changeset. The file follows the 
-[.gitignore pattern format](https://git-scm.com/docs/gitignore#_pattern_format)
+Files that have no impact on test results should be excluded from the published changeset.
 
-Files that have no impact on test results should be added to this file.
+* `.onereportignore` specifies files to exclude
+* `.onereportinclude` specifies files to include
+
+Both files follow the [.gitignore pattern format](https://git-scm.com/docs/gitignore#_pattern_format)

@@ -23,7 +23,7 @@ type Change struct {
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignore.GitIgnore) (*Changeset, error) {
+func MakeChangeset(fromRev string, toRev string, remote string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (*Changeset, error) {
 	contextSize := 4
 
 	r, err := git.PlainOpen(".")
@@ -36,12 +36,10 @@ func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignor
 		if err != nil {
 			return nil, err
 		}
-		if len(config.Remotes) != 1 {
-			return nil, fmt.Errorf("please specify --remote - I wasn't able to guess because the repo has %d remotes", len(config.Remotes))
-		}
-		for k := range config.Remotes {
-			remoteConfig := config.Remotes[k]
+		if remoteConfig, ok := config.Remotes["origin"]; ok {
 			remote = remoteConfig.URLs[0]
+		} else {
+			return nil, fmt.Errorf("please specify --remote since this repo does not have an origin remote")
 		}
 	}
 
@@ -96,7 +94,10 @@ func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignor
 		case merkletrie.Delete:
 			// TODO
 		case merkletrie.Modify:
-			if gitIgnore.MatchesPath(gitChange.To.Name) {
+			if excluded != nil && excluded.MatchesPath(gitChange.To.Name) {
+				continue
+			}
+			if included != nil && !included.MatchesPath(gitChange.To.Name) {
 				continue
 			}
 			leftFile, err := leftTree.File(gitChange.From.Name)
