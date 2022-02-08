@@ -39,17 +39,17 @@ Download an executable from the [releases](https://github.com/SmartBear/one-repo
       -dry-run
             Do not publish, only print
       -from-rev string
-            From git revision
+            From git revision (default is the single parent of to-rev)
       -organization-id string
             OneReport organization id
       -password string
             OneReport password
       -remote string
-            Git remote (the repo url)
+            Git remote (default is the first remote in .git/config)
       -to-rev string
-            To git revision
+            To git revision (default is the HEAD revision)
       -url string
-            Git remote (the repo url) (default "https://one-report.vercel.app")
+            OneReport url (default "https://one-report.vercel.app")
       -username string
             OneReport username
 

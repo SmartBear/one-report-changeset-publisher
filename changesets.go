@@ -11,14 +11,14 @@ import (
 )
 
 type Changeset struct {
-	Remote  string  `json:"remote"`
-	FromRev string  `json:"fromRev"`
+	Remote  string    `json:"remote"`
+	FromRev string    `json:"fromRev"`
 	ToRev   string    `json:"toRev"`
 	Changes []*Change `json:"changes"`
 }
 
 type Change struct {
-	FromPath string  `json:"fromPath"`
+	FromPath     string  `json:"fromPath"`
 	ToPath       string  `json:"toPath"`
 	LineMappings [][]int `json:"lineMappings"`
 }
@@ -37,12 +37,35 @@ func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignor
 			return nil, err
 		}
 		if len(config.Remotes) != 1 {
-			return nil, fmt.Errorf("Please specify --remote. I wasn't able to guess because the repo has $d remotes", len(config.Remotes))
+			return nil, fmt.Errorf("please specify --remote - I wasn't able to guess because the repo has %d remotes", len(config.Remotes))
 		}
 		for k := range config.Remotes {
 			remoteConfig := config.Remotes[k]
 			remote = remoteConfig.URLs[0]
 		}
+	}
+
+	if toRev == "" {
+		head, err := r.Head()
+		if err != nil {
+			return nil, err
+		}
+		toRev = head.Hash().String()
+	}
+
+	if fromRev == "" {
+		toCommit, err := r.CommitObject(plumbing.NewHash(toRev))
+		if err != nil {
+			return nil, err
+		}
+		if len(toCommit.ParentHashes) != 1 {
+			return nil, fmt.Errorf(
+				"please specify --fromRev - the toRev=%s has %d parents, and I can only guess if there is exactly 1",
+				toRev,
+				len(toCommit.ParentHashes),
+			)
+		}
+		fromRev = toCommit.ParentHashes[0].String()
 	}
 
 	leftTree, err := getTree(r, fromRev)
