@@ -6,7 +6,7 @@ Here is an example changeset:
 
 ```json
 {
-  "repo": "git@github.com:MyOrg/my-project.git",
+  "remote": "git@github.com:MyOrg/my-project.git",
   "fromRev": "400a62e39d39d231d8160002dfb7ed95a004278b",
   "toRev": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
   "files": [
@@ -33,7 +33,11 @@ Download an executable from the [releases](https://github.com/SmartBear/one-repo
 
 ## Command Line
 
+    $ one-report-changeset-publisher --help
+
     Usage of one-report-changeset-publisher:
+      -dry-run
+            Do not publish, only print
       -from-rev string
             From git revision
       -organization-id string
@@ -46,6 +50,8 @@ Download an executable from the [releases](https://github.com/SmartBear/one-repo
             To git revision
       -url string
             Git remote (the repo url) (default "https://one-report.vercel.app")
+      -username string
+            OneReport username
 
 ## Configuration
 

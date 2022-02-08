@@ -31,6 +31,20 @@ func MakeChangeset(fromRev string, toRev string, remote string, gitIgnore *ignor
 		return nil, err
 	}
 
+	if remote == "" {
+		config, err := r.Config()
+		if err != nil {
+			return nil, err
+		}
+		if len(config.Remotes) != 1 {
+			return nil, fmt.Errorf("Please specify --remote. I wasn't able to guess because the repo has $d remotes", len(config.Remotes))
+		}
+		for k := range config.Remotes {
+			remoteConfig := config.Remotes[k]
+			remote = remoteConfig.URLs[0]
+		}
+	}
+
 	leftTree, err := getTree(r, fromRev)
 	if err != nil {
 		return nil, err

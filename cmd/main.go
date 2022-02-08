@@ -11,7 +11,7 @@ import (
 
 func main() {
 	organizationId := flag.String("organization-id", "", "OneReport organization id")
-	remote := flag.String("remote", "", "Git remote (the repo url)")
+	remote := flag.String("remote", "", "Git remote (optional). Defaults to the first remote in .git/config")
 	fromRev := flag.String("from-rev", "", "From git revision")
 	toRev := flag.String("to-rev", "", "To git revision")
 	username := flag.String("username", "", "OneReport username")
