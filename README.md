@@ -1,3 +1,5 @@
+[![Test](https://github.com/SmartBear/one-report-changeset-publisher/actions/workflows/test.yml/badge.svg)](https://github.com/SmartBear/one-report-changeset-publisher/actions/workflows/test.yml)
+
 # OneReport Changeset Publisher
 
 This is a command line tool that publishes changesets to OneReport.
