@@ -11,8 +11,10 @@ import (
 func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"779528fd0fd6648e85fe77b8bf7c1495082e57e8",
-		"9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
+		//"ad2c70149ccc529ab26588cde2af1312e6aa0c06",
+		//"1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+		"ad2c70149ccc529ab26588cde2af1312e6aa0c06",
+		"1ae2aabbcdd11948403578a4f2dd32911cc48a00",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		false,
 		nil,
@@ -25,8 +27,8 @@ func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "779528fd0fd6648e85fe77b8bf7c1495082e57e8",
-	  "toRev": "9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
+	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
+	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -57,8 +59,8 @@ func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 func TestMakeChangesetWithExclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"779528fd0fd6648e85fe77b8bf7c1495082e57e8",
-		"9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
+		"ad2c70149ccc529ab26588cde2af1312e6aa0c06",
+		"1ae2aabbcdd11948403578a4f2dd32911cc48a00",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		false,
 		ignore.CompileIgnoreLines("testdata/a.*"),
@@ -71,8 +73,8 @@ func TestMakeChangesetWithExclude(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "779528fd0fd6648e85fe77b8bf7c1495082e57e8",
-	  "toRev": "9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
+	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
+	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -93,8 +95,8 @@ func TestMakeChangesetWithExclude(t *testing.T) {
 func TestMakeChangesetWithInclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"779528fd0fd6648e85fe77b8bf7c1495082e57e8",
-		"9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
+		"ad2c70149ccc529ab26588cde2af1312e6aa0c06",
+		"1ae2aabbcdd11948403578a4f2dd32911cc48a00",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		false,
 		nil,
@@ -107,8 +109,8 @@ func TestMakeChangesetWithInclude(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "779528fd0fd6648e85fe77b8bf7c1495082e57e8",
-	  "toRev": "9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
+	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
+	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -129,8 +131,8 @@ func TestMakeChangesetWithInclude(t *testing.T) {
 func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
-		"6e02e95590db65c905de2f466597a07cd5fd63cd",
+		"1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+		"e57bfde5c3591a14c0e199c900174a08b0b94312",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		false,
 		nil,
@@ -143,8 +145,8 @@ func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
-	  "toRev": "6e02e95590db65c905de2f466597a07cd5fd63cd",
+	  "fromRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+	  "toRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 	  "changes": [
 		{
 		  "fromPath": "testdata/a.txt",
@@ -173,8 +175,8 @@ func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 func TestMakeChangesetWithMovedFile(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"6e02e95590db65c905de2f466597a07cd5fd63cd",
-		"2895a2ce5bb461f56251a9ea3674945f12a3d902",
+		"e57bfde5c3591a14c0e199c900174a08b0b94312",
+		"082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		false,
 		nil,
@@ -187,8 +189,8 @@ func TestMakeChangesetWithMovedFile(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "6e02e95590db65c905de2f466597a07cd5fd63cd",
-	  "toRev": "2895a2ce5bb461f56251a9ea3674945f12a3d902",
+	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
+	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
 	  "changes": [
 		{
 		  "fromPath": "testdata/b.txt",
@@ -204,8 +206,8 @@ func TestMakeChangesetWithMovedFile(t *testing.T) {
 func TestMakeChangesetWithHashedPaths(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"6e02e95590db65c905de2f466597a07cd5fd63cd",
-		"2895a2ce5bb461f56251a9ea3674945f12a3d902",
+		"e57bfde5c3591a14c0e199c900174a08b0b94312",
+		"082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		true,
 		nil,
@@ -218,8 +220,8 @@ func TestMakeChangesetWithHashedPaths(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "6e02e95590db65c905de2f466597a07cd5fd63cd",
-	  "toRev": "2895a2ce5bb461f56251a9ea3674945f12a3d902",
+	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
+	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
 	  "changes": [
 		{
 		  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
