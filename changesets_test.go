@@ -430,3 +430,41 @@ func TestMakeChangesetWithInclude(t *testing.T) {
 
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
+
+func TestMakeChangesetWithAddedFiles(t *testing.T) {
+	g := gomega.NewGomegaWithT(t)
+	changeset, err := MakeChangeset(
+		"1754ca71f67f18ad5c7ed3c1c2c59e857cda2808",
+		"0ac4dd0d5519bac733f9fcd13792c586317b544d",
+		"git@github.com:SmartBear/one-report-changeset-publisher.git",
+		nil,
+		ignore.CompileIgnoreLines(".gitignore"),
+	)
+	assert.NoError(t, err)
+	j, err := json.MarshalIndent(changeset, "", "  ")
+	assert.NoError(t, err)
+
+	const expected = `{
+	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+	  "fromRev": "1754ca71f67f18ad5c7ed3c1c2c59e857cda2808",
+	  "toRev": "0ac4dd0d5519bac733f9fcd13792c586317b544d",
+	  "changes": [
+		{
+		  "fromPath": "",
+		  "toPath": ".gitignore",
+		  "lineMappings": [
+			[
+			  -1,
+			  1
+			],
+			[
+			  -1,
+			  2
+			]
+		  ]
+		}
+	  ]
+	}`
+
+	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
+}

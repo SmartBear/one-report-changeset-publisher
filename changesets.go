@@ -66,17 +66,17 @@ func MakeChangeset(fromRev string, toRev string, remote string, excluded *ignore
 		fromRev = toCommit.ParentHashes[0].String()
 	}
 
-	leftTree, err := getTree(r, fromRev)
+	fromTree, err := getTree(r, fromRev)
 	if err != nil {
 		return nil, err
 	}
 
-	rightTree, err := getTree(r, toRev)
+	toTree, err := getTree(r, toRev)
 	if err != nil {
 		return nil, err
 	}
 
-	gitChanges, err := leftTree.Diff(rightTree)
+	gitChanges, err := fromTree.Diff(toTree)
 	if err != nil {
 		return nil, err
 	}
@@ -88,62 +88,54 @@ func MakeChangeset(fromRev string, toRev string, remote string, excluded *ignore
 		if err != nil {
 			return nil, err
 		}
+
+		var hasTo bool
+		var hasFrom bool
+
 		switch action {
 		case merkletrie.Insert:
-			// TODO
+			hasFrom = false
+			hasTo = true
 		case merkletrie.Delete:
-			// TODO
+			hasFrom = true
+			hasTo = false
 		case merkletrie.Modify:
-			if excluded != nil && excluded.MatchesPath(gitChange.To.Name) {
-				continue
-			}
-			if included != nil && !included.MatchesPath(gitChange.To.Name) {
-				continue
-			}
-			leftFile, err := leftTree.File(gitChange.From.Name)
-			if err != nil {
-				return nil, err
-			}
-			leftBinary, err := leftFile.IsBinary()
-			if err != nil {
-				return nil, err
-			}
-
-			rightFile, err := rightTree.File(gitChange.To.Name)
-			if err != nil {
-				return nil, err
-			}
-			rightBinary, err := rightFile.IsBinary()
-			if err != nil {
-				return nil, err
-			}
-
-			if !leftBinary && !rightBinary {
-				leftContents, err := leftFile.Contents()
-				if err != nil {
-					return nil, err
-				}
-
-				rightContents, err := rightFile.Contents()
-				if err != nil {
-					return nil, err
-				}
-
-				mapping, err := lhdiff.Lhdiff(leftContents, rightContents, contextSize, false)
-				if err != nil {
-					return nil, err
-				}
-
-				change := &Change{
-					FromPath:     gitChange.From.Name,
-					ToPath:       gitChange.To.Name,
-					LineMappings: mapping,
-				}
-				changes = append(changes, change)
-			}
+			hasFrom = true
+			hasTo = true
 		default:
 			panic(fmt.Sprintf("unsupported action: %d", action))
 		}
+
+		if exclude(hasTo, hasFrom, excluded, included, gitChange) {
+			continue
+		}
+
+		fromContents, fromBinary, err := textContents(hasFrom, fromTree, gitChange.From.Name)
+		if err != nil {
+			return nil, err
+		}
+		if fromBinary {
+			continue
+		}
+		toContents, toBinary, err := textContents(hasTo, toTree, gitChange.To.Name)
+		if err != nil {
+			return nil, err
+		}
+		if toBinary {
+			continue
+		}
+
+		mapping, err := lhdiff.Lhdiff(fromContents, toContents, contextSize, false)
+		if err != nil {
+			return nil, err
+		}
+
+		change := &Change{
+			FromPath:     gitChange.From.Name,
+			ToPath:       gitChange.To.Name,
+			LineMappings: mapping,
+		}
+		changes = append(changes, change)
 	}
 
 	changeset := &Changeset{
@@ -153,6 +145,38 @@ func MakeChangeset(fromRev string, toRev string, remote string, excluded *ignore
 		Changes: changes,
 	}
 	return changeset, nil
+}
+
+func textContents(hasFile bool, tree *object.Tree, name string) (string, bool, error) {
+	if !hasFile {
+		return "", false, nil
+	}
+	file, err := tree.File(name)
+	if err != nil {
+		return "", false, err
+	}
+	isBinary, err := file.IsBinary()
+	if err != nil || isBinary {
+		return "", isBinary, err
+	}
+	contents, err := file.Contents()
+	return contents, false, err
+}
+
+func exclude(hasTo bool, hasFrom bool, excluded *ignore.GitIgnore, included *ignore.GitIgnore, change *object.Change) bool {
+	if hasTo && excluded != nil && excluded.MatchesPath(change.To.Name) {
+		return true
+	}
+	if hasTo && included != nil && !included.MatchesPath(change.To.Name) {
+		return true
+	}
+	if hasFrom && excluded != nil && excluded.MatchesPath(change.From.Name) {
+		return true
+	}
+	if hasFrom && included != nil && !included.MatchesPath(change.From.Name) {
+		return true
+	}
+	return false
 }
 
 func getTree(r *git.Repository, revision string) (*object.Tree, error) {
