@@ -1,6 +1,7 @@
 package publisher
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"github.com/SmartBear/lhdiff"
 	"github.com/go-git/go-git/v5"
@@ -23,7 +24,7 @@ type Change struct {
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangeset(fromRev string, toRev string, remote string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (*Changeset, error) {
+func MakeChangeset(fromRev string, toRev string, remote string, hashPaths bool, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (*Changeset, error) {
 	contextSize := 4
 
 	r, err := git.PlainOpen(".")
@@ -130,9 +131,19 @@ func MakeChangeset(fromRev string, toRev string, remote string, excluded *ignore
 			return nil, err
 		}
 
+		var fromPath string
+		var toPath string
+		if hashPaths {
+			fromPath = hash(gitChange.From.Name)
+			toPath = hash(gitChange.To.Name)
+		} else {
+			fromPath = gitChange.From.Name
+			toPath = gitChange.To.Name
+		}
+
 		change := &Change{
-			FromPath:     gitChange.From.Name,
-			ToPath:       gitChange.To.Name,
+			FromPath:     fromPath,
+			ToPath:       toPath,
 			LineMappings: mapping,
 		}
 		changes = append(changes, change)
@@ -145,6 +156,13 @@ func MakeChangeset(fromRev string, toRev string, remote string, excluded *ignore
 		Changes: changes,
 	}
 	return changeset, nil
+}
+
+func hash(s string) string {
+	h := sha1.New()
+	h.Write([]byte(s))
+	bs := h.Sum(nil)
+	return fmt.Sprintf("%x", bs)
 }
 
 func textContents(hasFile bool, tree *object.Tree, name string) (string, bool, error) {

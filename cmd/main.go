@@ -17,13 +17,14 @@ func main() {
 	username := flag.String("username", "", "OneReport username")
 	password := flag.String("password", "", "OneReport password")
 	dryRun := flag.Bool("dry-run", false, "Do not publish, only print")
+	hashPaths := flag.Bool("hash-paths", false, "Hash file paths")
 	url := flag.String("url", "https://one-report.vercel.app", "OneReport url")
 	flag.Parse()
 
 	excluded, _ := ignore.CompileIgnoreFile(".onereportignore")
 	included, _ := ignore.CompileIgnoreFile(".onereportinclude")
 
-	changeset, err := publisher.MakeChangeset(*fromRev, *toRev, *remote, excluded, included)
+	changeset, err := publisher.MakeChangeset(*fromRev, *toRev, *remote, *hashPaths, excluded, included)
 	check(err)
 	if *dryRun {
 		bytes, err := json.MarshalIndent(changeset, "", "  ")

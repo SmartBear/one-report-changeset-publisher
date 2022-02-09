@@ -12,8 +12,8 @@ Here is an example changeset:
   "toRev": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
   "changes": [
     {
-      "fromPath": "src/main.rb",
-      "toPath": "src/main.rb",
+      "fromPath": "testdata/b.txt",
+      "toPath": "testdata/c.txt",
       "lineMappings": [
         [10, 11],
         [11, 12],
@@ -29,7 +29,27 @@ The `lineMappings` array is a list of 0-indexed line numbers that have changed, 
 `-1` means the line was not present. See [lhdiff](https://github.com/SmartBear/lhdiff#readme) for more details.
 
 Note that the payload does not include any source code (apart from file paths).
-File paths can also be anonymized if the `-hash-paths` option is specified (see below)
+File paths can also be anonymized if the `-hash-paths` option is specified:
+
+```json
+{
+  "remote": "git@github.com:MyOrg/my-project.git",
+  "fromRev": "400a62e39d39d231d8160002dfb7ed95a004278b",
+  "toRev": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
+  "changes": [
+    {
+      "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
+      "toPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
+      "lineMappings": [
+        [10, 11],
+        [11, 12],
+        [12, -1],
+        [-1, 10]
+      ]
+    }
+  ]
+}
+```
 
 ## Installation
 
