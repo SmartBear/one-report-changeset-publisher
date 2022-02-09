@@ -3,7 +3,7 @@ module github.com/SmartBear/one-report-changeset-publisher
 go 1.17
 
 require (
-	github.com/SmartBear/lhdiff v0.1.0
+	github.com/SmartBear/lhdiff v0.1.1
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/stretchr/testify v1.7.0

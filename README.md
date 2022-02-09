@@ -25,8 +25,11 @@ Here is an example changeset:
 }
 ```
 
-The payload does not include any source code (apart from file paths). The `lineMappings` array is a list of lines that have changed
-using a `[leftLineNumber, rightLineNumber]` mapping. `-1` means the line was not present. See [lhdiff](https://github.com/SmartBear/lhdiff#readme) for more details.
+The `lineMappings` array is a list of 0-indexed line numbers that have changed, using a `[leftLineNumber, rightLineNumber]` mapping. 
+`-1` means the line was not present. See [lhdiff](https://github.com/SmartBear/lhdiff#readme) for more details.
+
+Note that the payload does not include any source code (apart from file paths).
+File paths can also be anonymized if the `-hash-paths` option is specified (see below)
 
 ## Installation
 

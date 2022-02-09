@@ -8,13 +8,13 @@ import (
 	"testing"
 )
 
-func TestMakeChangesetNoIgnore(t *testing.T) {
+func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"0ac4dd0d5519bac733f9fcd13792c586317b544d",
-		"8bb476618aafc35eafa6beb7f63e286efa3df5d4",
+		"779528fd0fd6648e85fe77b8bf7c1495082e57e8",
+		"9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
-		ignore.CompileIgnoreLines(),
+		nil,
 		nil,
 	)
 	assert.NoError(t, err)
@@ -24,273 +24,27 @@ func TestMakeChangesetNoIgnore(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "0ac4dd0d5519bac733f9fcd13792c586317b544d",
-	  "toRev": "8bb476618aafc35eafa6beb7f63e286efa3df5d4",
+	  "fromRev": "779528fd0fd6648e85fe77b8bf7c1495082e57e8",
+	  "toRev": "9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
 	  "changes": [
 		{
-		  "fromPath": "go.mod",
-		  "toPath": "go.mod",
+		  "fromPath": "",
+		  "toPath": "testdata/a.txt",
 		  "lineMappings": [
-			[
-			  4,
-			  -1
-			],
-			[
-			  5,
-			  -1
-			],
-			[
-			  6,
-			  -1
-			],
-			[
-			  7,
-			  -1
-			],
-			[
-			  8,
-			  -1
-			],
-			[
-			  9,
-			  -1
-			],
-			[
-			  10,
-			  -1
-			],
-			[
-			  11,
-			  -1
-			],
-			[
-			  12,
-			  -1
-			]
+			[-1,0],
+			[-1,1],
+			[-1,2],
+			[-1,3]
 		  ]
 		},
 		{
-		  "fromPath": "go.sum",
-		  "toPath": "go.sum",
+		  "fromPath": "",
+		  "toPath": "testdata/b.txt",
 		  "lineMappings": [
-			[
-			  0,
-			  -1
-			],
-			[
-			  1,
-			  -1
-			],
-			[
-			  2,
-			  -1
-			],
-			[
-			  3,
-			  -1
-			],
-			[
-			  4,
-			  -1
-			],
-			[
-			  5,
-			  -1
-			],
-			[
-			  6,
-			  -1
-			],
-			[
-			  7,
-			  -1
-			],
-			[
-			  8,
-			  -1
-			],
-			[
-			  9,
-			  -1
-			],
-			[
-			  10,
-			  -1
-			],
-			[
-			  11,
-			  -1
-			],
-			[
-			  12,
-			  -1
-			],
-			[
-			  13,
-			  -1
-			],
-			[
-			  14,
-			  -1
-			],
-			[
-			  15,
-			  -1
-			],
-			[
-			  16,
-			  -1
-			],
-			[
-			  17,
-			  -1
-			],
-			[
-			  18,
-			  -1
-			],
-			[
-			  19,
-			  -1
-			],
-			[
-			  20,
-			  -1
-			],
-			[
-			  21,
-			  -1
-			],
-			[
-			  22,
-			  0
-			]
-		  ]
-		},
-		{
-		  "fromPath": "main.go",
-		  "toPath": "main.go",
-		  "lineMappings": [
-			[
-			  4,
-			  -1
-			],
-			[
-			  5,
-			  -1
-			],
-			[
-			  6,
-			  5
-			],
-			[
-			  7,
-			  6
-			],
-			[
-			  9,
-			  -1
-			],
-			[
-			  10,
-			  16
-			],
-			[
-			  11,
-			  -1
-			],
-			[
-			  12,
-			  -1
-			],
-			[
-			  13,
-			  -1
-			],
-			[
-			  14,
-			  -1
-			],
-			[
-			  15,
-			  -1
-			],
-			[
-			  16,
-			  -1
-			],
-			[
-			  17,
-			  24
-			],
-			[
-			  18,
-			  25
-			],
-			[
-			  -1,
-			  4
-			],
-			[
-			  -1,
-			  7
-			],
-			[
-			  -1,
-			  9
-			],
-			[
-			  -1,
-			  10
-			],
-			[
-			  -1,
-			  11
-			],
-			[
-			  -1,
-			  12
-			],
-			[
-			  -1,
-			  13
-			],
-			[
-			  -1,
-			  14
-			],
-			[
-			  -1,
-			  15
-			],
-			[
-			  -1,
-			  17
-			],
-			[
-			  -1,
-			  18
-			],
-			[
-			  -1,
-			  19
-			],
-			[
-			  -1,
-			  20
-			],
-			[
-			  -1,
-			  21
-			],
-			[
-			  -1,
-			  22
-			],
-			[
-			  -1,
-			  23
-			]
+			[-1,0],
+			[-1,1],
+			[-1,2],
+			[-1,3]
 		  ]
 		}
 	  ]
@@ -299,64 +53,33 @@ func TestMakeChangesetNoIgnore(t *testing.T) {
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
 
-func TestMakeChangesetWithIgnore(t *testing.T) {
+func TestMakeChangesetWithExclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"0ac4dd0d5519bac733f9fcd13792c586317b544d",
-		"8bb476618aafc35eafa6beb7f63e286efa3df5d4",
+		"779528fd0fd6648e85fe77b8bf7c1495082e57e8",
+		"9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
-		ignore.CompileIgnoreLines("*.go", "*.sum"),
+		ignore.CompileIgnoreLines("testdata/a.*"),
 		nil,
 	)
 	assert.NoError(t, err)
+
 	j, err := json.MarshalIndent(changeset, "", "  ")
 	assert.NoError(t, err)
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "0ac4dd0d5519bac733f9fcd13792c586317b544d",
-	  "toRev": "8bb476618aafc35eafa6beb7f63e286efa3df5d4",
+	  "fromRev": "779528fd0fd6648e85fe77b8bf7c1495082e57e8",
+	  "toRev": "9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
 	  "changes": [
 		{
-		  "fromPath": "go.mod",
-		  "toPath": "go.mod",
+		  "fromPath": "",
+		  "toPath": "testdata/b.txt",
 		  "lineMappings": [
-			[
-			  4,
-			  -1
-			],
-			[
-			  5,
-			  -1
-			],
-			[
-			  6,
-			  -1
-			],
-			[
-			  7,
-			  -1
-			],
-			[
-			  8,
-			  -1
-			],
-			[
-			  9,
-			  -1
-			],
-			[
-			  10,
-			  -1
-			],
-			[
-			  11,
-			  -1
-			],
-			[
-			  12,
-			  -1
-			]
+			[-1,0],
+			[-1,1],
+			[-1,2],
+			[-1,3]
 		  ]
 		}
 	  ]
@@ -368,61 +91,30 @@ func TestMakeChangesetWithIgnore(t *testing.T) {
 func TestMakeChangesetWithInclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"0ac4dd0d5519bac733f9fcd13792c586317b544d",
-		"8bb476618aafc35eafa6beb7f63e286efa3df5d4",
+		"779528fd0fd6648e85fe77b8bf7c1495082e57e8",
+		"9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		nil,
-		ignore.CompileIgnoreLines("*.mod"),
+		ignore.CompileIgnoreLines("testdata/b.*"),
 	)
 	assert.NoError(t, err)
+
 	j, err := json.MarshalIndent(changeset, "", "  ")
 	assert.NoError(t, err)
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "0ac4dd0d5519bac733f9fcd13792c586317b544d",
-	  "toRev": "8bb476618aafc35eafa6beb7f63e286efa3df5d4",
+	  "fromRev": "779528fd0fd6648e85fe77b8bf7c1495082e57e8",
+	  "toRev": "9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
 	  "changes": [
 		{
-		  "fromPath": "go.mod",
-		  "toPath": "go.mod",
+		  "fromPath": "",
+		  "toPath": "testdata/b.txt",
 		  "lineMappings": [
-			[
-			  4,
-			  -1
-			],
-			[
-			  5,
-			  -1
-			],
-			[
-			  6,
-			  -1
-			],
-			[
-			  7,
-			  -1
-			],
-			[
-			  8,
-			  -1
-			],
-			[
-			  9,
-			  -1
-			],
-			[
-			  10,
-			  -1
-			],
-			[
-			  11,
-			  -1
-			],
-			[
-			  12,
-			  -1
-			]
+			[-1,0],
+			[-1,1],
+			[-1,2],
+			[-1,3]
 		  ]
 		}
 	  ]
@@ -431,37 +123,72 @@ func TestMakeChangesetWithInclude(t *testing.T) {
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
 
-func TestMakeChangesetWithAddedFiles(t *testing.T) {
+func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	changeset, err := MakeChangeset(
-		"1754ca71f67f18ad5c7ed3c1c2c59e857cda2808",
-		"0ac4dd0d5519bac733f9fcd13792c586317b544d",
+		"9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
+		"6e02e95590db65c905de2f466597a07cd5fd63cd",
 		"git@github.com:SmartBear/one-report-changeset-publisher.git",
 		nil,
-		ignore.CompileIgnoreLines(".gitignore"),
+		nil,
 	)
 	assert.NoError(t, err)
+
 	j, err := json.MarshalIndent(changeset, "", "  ")
 	assert.NoError(t, err)
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
-	  "fromRev": "1754ca71f67f18ad5c7ed3c1c2c59e857cda2808",
-	  "toRev": "0ac4dd0d5519bac733f9fcd13792c586317b544d",
+	  "fromRev": "9e2afcc22ab5a68e6ba03ebdde46a3a8b057f16b",
+	  "toRev": "6e02e95590db65c905de2f466597a07cd5fd63cd",
 	  "changes": [
 		{
-		  "fromPath": "",
-		  "toPath": ".gitignore",
+		  "fromPath": "testdata/a.txt",
+		  "toPath": "",
 		  "lineMappings": [
-			[
-			  -1,
-			  1
-			],
-			[
-			  -1,
-			  2
-			]
+			[0,-1],
+			[1,-1],
+			[2,-1],
+			[3,-1]
 		  ]
+		},
+		{
+		  "fromPath": "testdata/b.txt",
+		  "toPath": "testdata/b.txt",
+		  "lineMappings": [
+			[3,4],
+			[-1,3]
+		  ]
+		}
+	  ]
+	}`
+
+	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
+}
+
+func TestMakeChangesetWithMovedFile(t *testing.T) {
+	g := gomega.NewGomegaWithT(t)
+	changeset, err := MakeChangeset(
+		"6e02e95590db65c905de2f466597a07cd5fd63cd",
+		"2895a2ce5bb461f56251a9ea3674945f12a3d902",
+		"git@github.com:SmartBear/one-report-changeset-publisher.git",
+		nil,
+		nil,
+	)
+	assert.NoError(t, err)
+
+	j, err := json.MarshalIndent(changeset, "", "  ")
+	assert.NoError(t, err)
+
+	const expected = `{
+	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+	  "fromRev": "6e02e95590db65c905de2f466597a07cd5fd63cd",
+	  "toRev": "2895a2ce5bb461f56251a9ea3674945f12a3d902",
+	  "changes": [
+		{
+		  "fromPath": "testdata/b.txt",
+		  "toPath": "testdata/c.txt",
+		  "lineMappings": []
 		}
 	  ]
 	}`
