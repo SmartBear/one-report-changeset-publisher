@@ -15,7 +15,7 @@ type Changeset struct {
 	Remote  string    `json:"remote"`
 	FromRev string    `json:"fromRev"`
 	ToRev   string    `json:"toRev"`
-	Changes []*Change `json:"changes"`
+	Changes []Change `json:"changes"`
 }
 
 type Change struct {
@@ -82,7 +82,7 @@ func MakeChangeset(fromRev string, toRev string, remote string, hashPaths bool, 
 		return nil, err
 	}
 
-	changes := make([]*Change, 0)
+	changes := make([]Change, 0)
 
 	for _, gitChange := range gitChanges {
 		action, err := gitChange.Action()
@@ -141,7 +141,7 @@ func MakeChangeset(fromRev string, toRev string, remote string, hashPaths bool, 
 			toPath = gitChange.To.Name
 		}
 
-		change := &Change{
+		change := Change{
 			FromPath:     fromPath,
 			ToPath:       toPath,
 			LineMappings: mapping,

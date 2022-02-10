@@ -14,8 +14,8 @@ It might be a good idea to add that directory to your `PATH`:
 
     export PATH=./dist/one-report-changeset-publisher_xxx_xxx:$PATH
 
-## Manual test
+## Test
 
-**TODO: We should write some automated tests. For now, do manual testing**
+Run all the tests
 
-    one-report-changeset-publisher -from-rev 0ac4dd0d5519bac733f9fcd13792c586317b544d -to-rev 8bb476618aafc35eafa6beb7f63e286efa3df5d4
+    go test -v -race ./...

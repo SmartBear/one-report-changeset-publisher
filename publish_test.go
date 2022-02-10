@@ -13,7 +13,7 @@ func ExamplePublish() {
 		Remote:  "some-remote",
 		FromRev: "aaa",
 		ToRev:   "bbb",
-		Changes: make([]*Change, 0),
+		Changes: make([]Change, 0),
 	}
 	req, err := MakeRequest(changeset, "1CCC7924-051C-496E-8467-D494C1C37B2A", "https://host.com", "anyone", "secret")
 	if err != nil {
