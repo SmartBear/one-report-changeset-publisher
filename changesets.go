@@ -24,7 +24,7 @@ type Change struct {
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangeset(fromRev string, toRev string, hashPaths bool, remote *string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (*Changeset, error) {
+func MakeChangeset(fromRev *string, toRev *string, hashPaths bool, remote *string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (*Changeset, error) {
 	contextSize := 4
 
 	var err error
@@ -54,27 +54,29 @@ func MakeChangeset(fromRev string, toRev string, hashPaths bool, remote *string,
 		}
 	}
 
-	if toRev == "" {
+	if toRev == nil {
 		head, err := r.Head()
 		if err != nil {
 			return nil, err
 		}
-		toRev = head.Hash().String()
+		hash := head.Hash().String()
+		toRev = &hash
 	}
 
-	if fromRev == "" {
-		toCommit, err := r.CommitObject(plumbing.NewHash(toRev))
+	if fromRev == nil {
+		toCommit, err := r.CommitObject(plumbing.NewHash(*toRev))
 		if err != nil {
 			return nil, err
 		}
 		if len(toCommit.ParentHashes) != 1 {
 			return nil, fmt.Errorf(
 				"please specify --fromRev - the toRev=%s has %d parents, and I can only guess if there is exactly 1",
-				toRev,
+				*toRev,
 				len(toCommit.ParentHashes),
 			)
 		}
-		fromRev = toCommit.ParentHashes[0].String()
+		hash := toCommit.ParentHashes[0].String()
+		fromRev = &hash
 	}
 
 	fromTree, err := getTree(r, fromRev)
@@ -161,8 +163,8 @@ func MakeChangeset(fromRev string, toRev string, hashPaths bool, remote *string,
 
 	changeset := &Changeset{
 		Remote:  *remote,
-		FromRev: fromRev,
-		ToRev:   toRev,
+		FromRev: *fromRev,
+		ToRev:   *toRev,
 		Changes: changes,
 	}
 	return changeset, nil
@@ -207,8 +209,8 @@ func exclude(hasTo bool, hasFrom bool, excluded *ignore.GitIgnore, included *ign
 	return false
 }
 
-func getTree(r *git.Repository, revision string) (*object.Tree, error) {
-	h, err := r.ResolveRevision(plumbing.Revision(revision))
+func getTree(r *git.Repository, revision *string) (*object.Tree, error) {
+	h, err := r.ResolveRevision(plumbing.Revision(*revision))
 	if err != nil {
 		return nil, err
 	}

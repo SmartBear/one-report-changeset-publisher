@@ -11,7 +11,9 @@ import (
 func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	changeset, err := MakeChangeset("ad2c70149ccc529ab26588cde2af1312e6aa0c06", "1ae2aabbcdd11948403578a4f2dd32911cc48a00", false, &remote, nil, nil)
+	fromRev := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	toRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, nil, nil)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -51,7 +53,9 @@ func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 func TestMakeChangesetWithExclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	changeset, err := MakeChangeset("ad2c70149ccc529ab26588cde2af1312e6aa0c06", "1ae2aabbcdd11948403578a4f2dd32911cc48a00", false, &remote, ignore.CompileIgnoreLines("testdata/a.*"), nil)
+	fromRev := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	toRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, ignore.CompileIgnoreLines("testdata/a.*"), nil)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -81,7 +85,9 @@ func TestMakeChangesetWithExclude(t *testing.T) {
 func TestMakeChangesetWithInclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	changeset, err := MakeChangeset("ad2c70149ccc529ab26588cde2af1312e6aa0c06", "1ae2aabbcdd11948403578a4f2dd32911cc48a00", false, &remote, nil, ignore.CompileIgnoreLines("testdata/b.*"))
+	fromRev := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	toRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, nil, ignore.CompileIgnoreLines("testdata/b.*"))
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -111,7 +117,9 @@ func TestMakeChangesetWithInclude(t *testing.T) {
 func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	changeset, err := MakeChangeset("1ae2aabbcdd11948403578a4f2dd32911cc48a00", "e57bfde5c3591a14c0e199c900174a08b0b94312", false, &remote, nil, nil)
+	fromRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	toRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, nil, nil)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -149,7 +157,9 @@ func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 func TestMakeChangesetWithMovedFile(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	changeset, err := MakeChangeset("e57bfde5c3591a14c0e199c900174a08b0b94312", "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3", false, &remote, nil, nil)
+	fromRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	toRev := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, nil, nil)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -174,7 +184,9 @@ func TestMakeChangesetWithMovedFile(t *testing.T) {
 func TestMakeChangesetWithHashedPaths(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	changeset, err := MakeChangeset("e57bfde5c3591a14c0e199c900174a08b0b94312", "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3", true, &remote, nil, nil)
+	fromRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	toRev := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
+	changeset, err := MakeChangeset(&fromRev, &toRev, true, &remote, nil, nil)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -198,7 +210,9 @@ func TestMakeChangesetWithHashedPaths(t *testing.T) {
 
 func TestMakeChangesetWithoutRemote(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
-	changeset, err := MakeChangeset("e57bfde5c3591a14c0e199c900174a08b0b94312", "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3", true, nil, nil, nil)
+	fromRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	toRev := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
+	changeset, err := MakeChangeset(&fromRev, &toRev, true, nil, nil, nil)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
