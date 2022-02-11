@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/SmartBear/one-report-changeset-publisher"
-	"github.com/sabhiram/go-gitignore"
 	"os"
 )
 
@@ -21,10 +20,7 @@ func main() {
 	url := flag.String("url", "https://one-report.vercel.app", "OneReport url")
 	flag.Parse()
 
-	excluded, _ := ignore.CompileIgnoreFile(".onereportignore")
-	included, _ := ignore.CompileIgnoreFile(".onereportinclude")
-
-	changeset, err := publisher.MakeChangeset(*fromRev, *toRev, *remote, *hashPaths, excluded, included)
+	changeset, err := publisher.MakeChangeset(*fromRev, *toRev, *hashPaths, remote, nil, nil)
 	check(err)
 	if *dryRun {
 		bytes, err := json.MarshalIndent(changeset, "", "  ")

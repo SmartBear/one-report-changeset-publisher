@@ -24,21 +24,31 @@ type Change struct {
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangeset(fromRev string, toRev string, remote string, hashPaths bool, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (*Changeset, error) {
+func MakeChangeset(fromRev string, toRev string, hashPaths bool, remote *string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (*Changeset, error) {
 	contextSize := 4
+
+	var err error
+	if excluded == nil {
+		// Ignore errors
+		excluded, _ = ignore.CompileIgnoreFile(".onereportignore")
+	}
+	if included == nil {
+		// Ignore errors
+		included, _ = ignore.CompileIgnoreFile(".onereportinclude")
+	}
 
 	r, err := git.PlainOpen(".")
 	if err != nil {
 		return nil, err
 	}
 
-	if remote == "" {
+	if remote == nil {
 		config, err := r.Config()
 		if err != nil {
 			return nil, err
 		}
 		if remoteConfig, ok := config.Remotes["origin"]; ok {
-			remote = remoteConfig.URLs[0]
+			remote = &remoteConfig.URLs[0]
 		} else {
 			return nil, fmt.Errorf("please specify --remote since this repo does not have an origin remote")
 		}
@@ -150,7 +160,7 @@ func MakeChangeset(fromRev string, toRev string, remote string, hashPaths bool, 
 	}
 
 	changeset := &Changeset{
-		Remote:  remote,
+		Remote:  *remote,
 		FromRev: fromRev,
 		ToRev:   toRev,
 		Changes: changes,
