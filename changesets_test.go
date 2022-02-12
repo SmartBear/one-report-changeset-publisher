@@ -8,6 +8,25 @@ import (
 	"testing"
 )
 
+func TestMakeChangesets(t *testing.T) {
+	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
+	r1 := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	r2 := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	r3 := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	revisions := []string{
+		r1,
+		r2,
+		r3,
+	}
+	changesets, err := MakeChangesets(revisions, false, &remote, nil, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(changesets))
+	assert.Equal(t, r1, changesets[0].FromRev)
+	assert.Equal(t, r2, changesets[0].ToRev)
+	assert.Equal(t, r2, changesets[1].FromRev)
+	assert.Equal(t, r3, changesets[1].ToRev)
+}
+
 func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
