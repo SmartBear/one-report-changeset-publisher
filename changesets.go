@@ -24,18 +24,18 @@ type Change struct {
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangesets(revisions []string, hashPaths bool, remote *string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) ([]*Changeset, error) {
+func MakeChangesets(revisions []string, hashPaths bool, remote *string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) ([]Changeset, error) {
 	if len(revisions) < 2 {
 		return nil, fmt.Errorf("need 2 or more revisions to make changesets, got %d", len(revisions))
 	}
-	changesets := make([]*Changeset, len(revisions)-1)
+	changesets := make([]Changeset, len(revisions)-1)
 	for i, toRev := range revisions[1:] {
 		fromRev := revisions[i]
 		changeset, err := MakeChangeset(&fromRev, &toRev, hashPaths, remote, excluded, included)
 		if err != nil {
 			return nil, err
 		}
-		changesets[i] = changeset
+		changesets[i] = *changeset
 	}
 	return changesets, nil
 }

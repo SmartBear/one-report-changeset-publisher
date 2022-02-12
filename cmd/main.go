@@ -20,7 +20,7 @@ func main() {
 	url := flag.String("url", "https://one-report.vercel.app", "OneReport url")
 	flag.Parse()
 
-	changeset, err := publisher.MakeChangeset(*fromRev, *toRev, *hashPaths, remote, nil, nil)
+	changeset, err := publisher.MakeChangeset(fromRev, toRev, *hashPaths, remote, nil, nil)
 	check(err)
 	if *dryRun {
 		bytes, err := json.MarshalIndent(changeset, "", "  ")
