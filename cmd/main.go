@@ -34,7 +34,7 @@ func doMain() error {
 		return err
 	}
 
-	changeset, err := publisher.MakeChangeset(fromRev, toRev, *hashPaths, remote, repo, nil, nil)
+	changeset, err := publisher.MakeChangeset(fromRev, toRev, *hashPaths, remote, repo, nil, nil, true)
 	if err != nil {
 		return err
 	}
