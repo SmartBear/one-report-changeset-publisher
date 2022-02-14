@@ -6,6 +6,7 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/sabhiram/go-gitignore"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -263,7 +264,7 @@ func TestMakeChangesetWithoutRemote(t *testing.T) {
 	j, err := json.MarshalIndent(changeset, "", "  ")
 	assert.NoError(t, err)
 
-	const expected = `{
+	expected := `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
 	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
@@ -276,6 +277,23 @@ func TestMakeChangesetWithoutRemote(t *testing.T) {
 	  ],
       "loc": -1
 	}`
+
+	if os.Getenv("CI") != "" {
+		// Different remote on GitHub Actions
+		expected = `{
+		  "remote": "https://github.com/SmartBear/one-report-changeset-publisher",
+		  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
+		  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
+		  "changes": [
+			{
+			  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
+			  "toPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
+			  "lineMappings": []
+			}
+		  ],
+		  "loc": -1
+		}`
+	}
 
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
