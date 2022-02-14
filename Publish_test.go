@@ -15,6 +15,7 @@ func ExamplePublish() {
 		ToRev:   "bbb",
 		Changes: make([]Change, 0),
 		Loc: 9876,
+		Files: 31,
 	}
 	req, err := MakeRequest(changeset, "1CCC7924-051C-496E-8467-D494C1C37B2A", "https://host.com", "anyone", "secret")
 	if err != nil {
@@ -45,6 +46,7 @@ func ExamplePublish() {
 	//   "fromRev": "aaa",
 	//   "toRev": "bbb",
 	//   "changes": [],
-	//   "loc": 9876
+	//   "loc": 9876,
+	//   "files": 31
 	// }
 }

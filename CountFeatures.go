@@ -9,25 +9,28 @@ import (
 	"strings"
 )
 
-func CountLoc(repo *git.Repository, revision string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (int, error) {
+// CountFeatures counts how many lines of code, and how many files there are.
+func CountFeatures(repo *git.Repository, revision string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (int, int, error) {
 	tree, err := GetTree(repo, revision)
 	if err != nil {
-		return -1, err
+		return -1, -1, err
 	}
 	seen := make(map[plumbing.Hash]bool)
 	iter := object.NewTreeWalker(tree, true, seen)
 	var name string
 	var entry object.TreeEntry
 	loc := 0
+	files := 0
 	for err == nil {
 		name, entry, err = iter.Next()
 		if entry.Mode.IsFile() {
 			contents, ok, err2 := TextContents(tree, excluded, included, name)
 			if err2 != nil {
-				return -1, err2
+				return -1, -1, err2
 			}
 			if ok {
-				loc = loc + lineCount(contents)
+				loc += lineCount(contents)
+				files += 1
 			}
 		}
 	}
@@ -35,7 +38,7 @@ func CountLoc(repo *git.Repository, revision string, excluded *ignore.GitIgnore,
 		err = nil
 		iter.Close()
 	}
-	return loc, nil
+	return loc, files, nil
 }
 
 // https://stackoverflow.com/questions/47240127/fastest-way-to-find-number-of-lines-in-go

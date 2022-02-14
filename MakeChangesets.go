@@ -18,6 +18,8 @@ type Changeset struct {
 	Changes []Change `json:"changes"`
 	// The total number of lines of code in ToRev (filtered by .onereportinclude and .onereportexluce
 	Loc int `json:"loc"`
+	// The total number of files in ToRev (filtered by .onereportinclude and .onereportexluce
+	Files int `json:"files"`
 }
 
 type Change struct {
@@ -40,8 +42,8 @@ func MakeChangesets(
 	changesets := make([]Changeset, len(revisions)-1)
 	for i, toRev := range revisions[1:] {
 		fromRev := revisions[i]
-		countLoc := i == len(revisions)-2
-		changeset, err := MakeChangeset(&fromRev, &toRev, hashPaths, remote, repo, excluded, included, countLoc)
+		countFeatures := i == len(revisions)-2
+		changeset, err := MakeChangeset(&fromRev, &toRev, hashPaths, remote, repo, excluded, included, countFeatures)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +60,7 @@ func MakeChangeset(
 	repo *git.Repository,
 	excluded *ignore.GitIgnore,
 	included *ignore.GitIgnore,
-	countLoc bool,
+	countFeatures bool,
 ) (*Changeset, error) {
 	contextSize := 4
 
@@ -198,8 +200,9 @@ func MakeChangeset(
 	}
 
 	loc := -1
-	if countLoc {
-		loc, err = CountLoc(repo, *toRev, excluded, included)
+	files := -1
+	if countFeatures {
+		loc, files, err = CountFeatures(repo, *toRev, excluded, included)
 		if err != nil {
 			return nil, err
 		}
@@ -211,6 +214,7 @@ func MakeChangeset(
 		ToRev:   *toRev,
 		Changes: changes,
 		Loc:     loc,
+		Files:   files,
 	}
 	return changeset, nil
 }

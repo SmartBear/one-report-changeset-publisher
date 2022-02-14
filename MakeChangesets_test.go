@@ -32,6 +32,7 @@ func TestMakeChangesets(t *testing.T) {
 	assert.Equal(t, r2, changesets[1].FromRev)
 	assert.Equal(t, r3, changesets[1].ToRev)
 	assert.Equal(t, 821, changesets[1].Loc)
+	assert.Equal(t, 6, changesets[1].Files)
 }
 
 func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
@@ -52,6 +53,7 @@ func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
 	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": -1,
+      "files": -1,
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -97,6 +99,7 @@ func TestMakeChangesetWithExclude(t *testing.T) {
 	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
 	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": -1,
+      "files": -1,
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -132,6 +135,7 @@ func TestMakeChangesetWithInclude(t *testing.T) {
 	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
 	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": -1,
+      "files": -1,
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -167,6 +171,7 @@ func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 	  "fromRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
 	  "toRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
       "loc": -1,
+      "files": -1,
 	  "changes": [
 		{
 		  "fromPath": "testdata/a.txt",
@@ -210,6 +215,7 @@ func TestMakeChangesetWithMovedFile(t *testing.T) {
 	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
+      "files": -1,
 	  "changes": [
 		{
 		  "fromPath": "testdata/b.txt",
@@ -240,6 +246,7 @@ func TestMakeChangesetWithHashedPaths(t *testing.T) {
 	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
+      "files": -1,
 	  "changes": [
 		{
 		  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
@@ -268,14 +275,15 @@ func TestMakeChangesetWithoutRemote(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
 	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
+      "loc": -1,
+      "files": -1,
 	  "changes": [
 		{
 		  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
 		  "toPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
 		  "lineMappings": []
 		}
-	  ],
-      "loc": -1
+	  ]
 	}`
 
 	if os.Getenv("CI") != "" {
@@ -284,14 +292,15 @@ func TestMakeChangesetWithoutRemote(t *testing.T) {
 		  "remote": "https://github.com/SmartBear/one-report-changeset-publisher",
 		  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 		  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
+		  "loc": -1,
+		  "files": -1,
 		  "changes": [
 			{
 			  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
 			  "toPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
 			  "lineMappings": []
 			}
-		  ],
-		  "loc": -1
+		  ]
 		}`
 	}
 

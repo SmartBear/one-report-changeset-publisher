@@ -11,7 +11,8 @@ func TestCountLoc(t *testing.T) {
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
 
-	loc, err := CountLoc(repo, revision, nil, nil)
+	loc, files, err := CountFeatures(repo, revision, nil, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 1297, loc)
+	assert.Equal(t, 16, files)
 }
