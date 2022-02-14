@@ -16,6 +16,8 @@ type Changeset struct {
 	FromRev string   `json:"fromRev"`
 	ToRev   string   `json:"toRev"`
 	Changes []Change `json:"changes"`
+	// The total number of lines of code in ToRev (filtered by .onereportinclude and .onereportexluce
+	Loc int `json:"loc"`
 }
 
 type Change struct {
@@ -24,14 +26,22 @@ type Change struct {
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangesets(revisions []string, hashPaths bool, remote *string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) ([]Changeset, error) {
+func MakeChangesets(
+	revisions []string,
+	hashPaths bool,
+	remote *string,
+	repo *git.Repository,
+	excluded *ignore.GitIgnore,
+	included *ignore.GitIgnore,
+) ([]Changeset, error) {
 	if len(revisions) < 2 {
 		return nil, fmt.Errorf("need 2 or more revisions to make changesets, got %d", len(revisions))
 	}
 	changesets := make([]Changeset, len(revisions)-1)
 	for i, toRev := range revisions[1:] {
 		fromRev := revisions[i]
-		changeset, err := MakeChangeset(&fromRev, &toRev, hashPaths, remote, excluded, included)
+		countLoc := i == len(revisions)-2
+		changeset, err := MakeChangeset(&fromRev, &toRev, hashPaths, remote, repo, excluded, included, countLoc)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +50,16 @@ func MakeChangesets(revisions []string, hashPaths bool, remote *string, excluded
 	return changesets, nil
 }
 
-func MakeChangeset(fromRev *string, toRev *string, hashPaths bool, remote *string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (*Changeset, error) {
+func MakeChangeset(
+	fromRev *string,
+	toRev *string,
+	hashPaths bool,
+	remote *string,
+	repo *git.Repository,
+	excluded *ignore.GitIgnore,
+	included *ignore.GitIgnore,
+	countLoc bool,
+) (*Changeset, error) {
 	contextSize := 4
 
 	var err error
@@ -53,13 +72,8 @@ func MakeChangeset(fromRev *string, toRev *string, hashPaths bool, remote *strin
 		included, _ = ignore.CompileIgnoreFile(".onereportinclude")
 	}
 
-	r, err := git.PlainOpen(".")
-	if err != nil {
-		return nil, err
-	}
-
 	if remote == nil {
-		config, err := r.Config()
+		config, err := repo.Config()
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +85,7 @@ func MakeChangeset(fromRev *string, toRev *string, hashPaths bool, remote *strin
 	}
 
 	if toRev == nil {
-		head, err := r.Head()
+		head, err := repo.Head()
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +94,7 @@ func MakeChangeset(fromRev *string, toRev *string, hashPaths bool, remote *strin
 	}
 
 	if fromRev == nil {
-		toCommit, err := r.CommitObject(plumbing.NewHash(*toRev))
+		toCommit, err := repo.CommitObject(plumbing.NewHash(*toRev))
 		if err != nil {
 			return nil, err
 		}
@@ -95,12 +109,12 @@ func MakeChangeset(fromRev *string, toRev *string, hashPaths bool, remote *strin
 		fromRev = &hash
 	}
 
-	fromTree, err := getTree(r, fromRev)
+	fromTree, err := GetTree(repo, *fromRev)
 	if err != nil {
 		return nil, err
 	}
 
-	toTree, err := getTree(r, toRev)
+	toTree, err := GetTree(repo, *toRev)
 	if err != nil {
 		return nil, err
 	}
@@ -118,40 +132,46 @@ func MakeChangeset(fromRev *string, toRev *string, hashPaths bool, remote *strin
 			return nil, err
 		}
 
-		var hasTo bool
-		var hasFrom bool
+		fromContents := ""
+		toContents := ""
+		var ok bool
 
 		switch action {
 		case merkletrie.Insert:
-			hasFrom = false
-			hasTo = true
+			toContents, ok, err = TextContents(toTree, excluded, included, gitChange.To.Name)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				continue
+			}
 		case merkletrie.Delete:
-			hasFrom = true
-			hasTo = false
+			fromContents, ok, err = TextContents(fromTree, excluded, included, gitChange.From.Name)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				continue
+			}
 		case merkletrie.Modify:
-			hasFrom = true
-			hasTo = true
+			fromContents, ok, err = TextContents(fromTree, excluded, included, gitChange.From.Name)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				continue
+			}
+
+			toContents, ok, err = TextContents(toTree, excluded, included, gitChange.To.Name)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				continue
+			}
+
 		default:
 			panic(fmt.Sprintf("unsupported action: %d", action))
-		}
-
-		if exclude(hasTo, hasFrom, excluded, included, gitChange) {
-			continue
-		}
-
-		fromContents, fromBinary, err := textContents(hasFrom, fromTree, gitChange.From.Name)
-		if err != nil {
-			return nil, err
-		}
-		if fromBinary {
-			continue
-		}
-		toContents, toBinary, err := textContents(hasTo, toTree, gitChange.To.Name)
-		if err != nil {
-			return nil, err
-		}
-		if toBinary {
-			continue
 		}
 
 		mapping, err := lhdiff.Lhdiff(fromContents, toContents, contextSize, false)
@@ -177,11 +197,20 @@ func MakeChangeset(fromRev *string, toRev *string, hashPaths bool, remote *strin
 		changes = append(changes, change)
 	}
 
+	loc := -1
+	if countLoc {
+		loc, err = CountLoc(repo, *toRev, excluded, included)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	changeset := &Changeset{
 		Remote:  *remote,
 		FromRev: *fromRev,
 		ToRev:   *toRev,
 		Changes: changes,
+		Loc:     loc,
 	}
 	return changeset, nil
 }
@@ -193,40 +222,28 @@ func hash(s string) string {
 	return fmt.Sprintf("%x", bs)
 }
 
-func textContents(hasFile bool, tree *object.Tree, name string) (string, bool, error) {
-	if !hasFile {
+func TextContents(tree *object.Tree, excluded *ignore.GitIgnore, included *ignore.GitIgnore, name string) (string, bool, error) {
+	if excluded != nil && excluded.MatchesPath(name) {
 		return "", false, nil
 	}
+	if included != nil && !included.MatchesPath(name) {
+		return "", false, nil
+	}
+
 	file, err := tree.File(name)
 	if err != nil {
 		return "", false, err
 	}
 	isBinary, err := file.IsBinary()
 	if err != nil || isBinary {
-		return "", isBinary, err
+		return "", false, err
 	}
 	contents, err := file.Contents()
-	return contents, false, err
+	return contents, true, err
 }
 
-func exclude(hasTo bool, hasFrom bool, excluded *ignore.GitIgnore, included *ignore.GitIgnore, change *object.Change) bool {
-	if hasTo && excluded != nil && excluded.MatchesPath(change.To.Name) {
-		return true
-	}
-	if hasTo && included != nil && !included.MatchesPath(change.To.Name) {
-		return true
-	}
-	if hasFrom && excluded != nil && excluded.MatchesPath(change.From.Name) {
-		return true
-	}
-	if hasFrom && included != nil && !included.MatchesPath(change.From.Name) {
-		return true
-	}
-	return false
-}
-
-func getTree(r *git.Repository, revision *string) (*object.Tree, error) {
-	h, err := r.ResolveRevision(plumbing.Revision(*revision))
+func GetTree(r *git.Repository, revision string) (*object.Tree, error) {
+	h, err := r.ResolveRevision(plumbing.Revision(revision))
 	if err != nil {
 		return nil, err
 	}

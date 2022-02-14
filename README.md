@@ -10,6 +10,7 @@ Here is an example changeset:
   "remote": "git@github.com:MyOrg/my-project.git",
   "fromRev": "400a62e39d39d231d8160002dfb7ed95a004278b",
   "toRev": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
+  "loc": 9841,
   "changes": [
     {
       "fromPath": "testdata/b.txt",
@@ -36,6 +37,7 @@ File paths can also be anonymized if the `-hash-paths` option is specified:
   "remote": "git@github.com:MyOrg/my-project.git",
   "fromRev": "400a62e39d39d231d8160002dfb7ed95a004278b",
   "toRev": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
+  "loc": 9841,
   "changes": [
     {
       "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",

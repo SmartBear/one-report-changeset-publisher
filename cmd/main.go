@@ -5,10 +5,19 @@ import (
 	"flag"
 	"fmt"
 	"github.com/SmartBear/one-report-changeset-publisher"
+	"github.com/go-git/go-git/v5"
 	"os"
 )
 
 func main() {
+	err := doMain()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+
+func doMain() error {
 	organizationId := flag.String("organization-id", "", "OneReport organization id")
 	remote := flag.String("remote", "", "Git remote (default is the origin remote in .git/config)")
 	fromRev := flag.String("from-rev", "", "From git revision (default is the single parent of to-rev)")
@@ -20,24 +29,29 @@ func main() {
 	url := flag.String("url", "https://one-report.vercel.app", "OneReport url")
 	flag.Parse()
 
-	changeset, err := publisher.MakeChangeset(fromRev, toRev, *hashPaths, remote, nil, nil)
-	check(err)
+	repo, err := git.PlainOpen(".")
+	if err != nil {
+		return err
+	}
+
+	changeset, err := publisher.MakeChangeset(fromRev, toRev, *hashPaths, remote, repo, nil, nil)
+	if err != nil {
+		return err
+	}
 	if *dryRun {
 		bytes, err := json.MarshalIndent(changeset, "", "  ")
-		check(err)
+		if err != nil {
+			return err
+		}
 		fmt.Println(string(bytes))
-		check(err)
 	} else {
 		txt, err := publisher.Publish(changeset, *organizationId, *url, *username, *password)
-		check(err)
+		if err != nil {
+			return err
+		}
 		fmt.Println(txt)
 	}
+	return nil
 }
 
-func check(err error) {
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-}
 

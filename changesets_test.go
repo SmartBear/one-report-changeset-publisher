@@ -2,6 +2,7 @@ package publisher
 
 import (
 	"encoding/json"
+	"github.com/go-git/go-git/v5"
 	"github.com/onsi/gomega"
 	"github.com/sabhiram/go-gitignore"
 	"github.com/stretchr/testify/assert"
@@ -18,13 +19,18 @@ func TestMakeChangesets(t *testing.T) {
 		r2,
 		r3,
 	}
-	changesets, err := MakeChangesets(revisions, false, &remote, nil, nil)
+	repo, err := git.PlainOpen(".")
+	assert.NoError(t, err)
+
+	changesets, err := MakeChangesets(revisions, false, &remote, repo, nil, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(changesets))
 	assert.Equal(t, r1, changesets[0].FromRev)
 	assert.Equal(t, r2, changesets[0].ToRev)
+	assert.Equal(t, -1, changesets[0].Loc)
 	assert.Equal(t, r2, changesets[1].FromRev)
 	assert.Equal(t, r3, changesets[1].ToRev)
+	assert.Equal(t, 821, changesets[1].Loc)
 }
 
 func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
@@ -32,7 +38,9 @@ func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	fromRev := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	toRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, nil, nil)
+	repo, err := git.PlainOpen(".")
+	assert.NoError(t, err)
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -42,6 +50,7 @@ func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
 	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
 	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+      "loc": -1,
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -74,7 +83,9 @@ func TestMakeChangesetWithExclude(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	fromRev := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	toRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, ignore.CompileIgnoreLines("testdata/a.*"), nil)
+	repo, err := git.PlainOpen(".")
+	assert.NoError(t, err)
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -84,6 +95,7 @@ func TestMakeChangesetWithExclude(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
 	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
 	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+      "loc": -1,
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -106,7 +118,9 @@ func TestMakeChangesetWithInclude(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	fromRev := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	toRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, nil, ignore.CompileIgnoreLines("testdata/b.*"))
+	repo, err := git.PlainOpen(".")
+	assert.NoError(t, err)
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -116,6 +130,7 @@ func TestMakeChangesetWithInclude(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
 	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
 	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+      "loc": -1,
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -138,7 +153,9 @@ func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	fromRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	toRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, nil, nil)
+	repo, err := git.PlainOpen(".")
+	assert.NoError(t, err)
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -148,6 +165,7 @@ func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
 	  "fromRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
 	  "toRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
+      "loc": -1,
 	  "changes": [
 		{
 		  "fromPath": "testdata/a.txt",
@@ -178,7 +196,9 @@ func TestMakeChangesetWithMovedFile(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	fromRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	toRev := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, nil, nil)
+	repo, err := git.PlainOpen(".")
+	assert.NoError(t, err)
+	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -188,6 +208,7 @@ func TestMakeChangesetWithMovedFile(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
 	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
+      "loc": -1,
 	  "changes": [
 		{
 		  "fromPath": "testdata/b.txt",
@@ -205,7 +226,9 @@ func TestMakeChangesetWithHashedPaths(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	fromRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	toRev := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
-	changeset, err := MakeChangeset(&fromRev, &toRev, true, &remote, nil, nil)
+	repo, err := git.PlainOpen(".")
+	assert.NoError(t, err)
+	changeset, err := MakeChangeset(&fromRev, &toRev, true, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -215,6 +238,7 @@ func TestMakeChangesetWithHashedPaths(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
 	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
+      "loc": -1,
 	  "changes": [
 		{
 		  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
@@ -231,7 +255,9 @@ func TestMakeChangesetWithoutRemote(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	fromRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	toRev := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
-	changeset, err := MakeChangeset(&fromRev, &toRev, true, nil, nil, nil)
+	repo, err := git.PlainOpen(".")
+	assert.NoError(t, err)
+	changeset, err := MakeChangeset(&fromRev, &toRev, true, nil, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -241,6 +267,7 @@ func TestMakeChangesetWithoutRemote(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
 	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
+      "loc": -1,
 	  "changes": [
 		{
 		  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
