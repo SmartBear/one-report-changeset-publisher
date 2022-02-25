@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func Publish(changeset *Changeset, organizationId string, baseUrl string, username string, password string) (string, error) {
+func Publish(changeset *MetaChangeset, organizationId string, baseUrl string, username string, password string) (string, error) {
 	req, err := MakeRequest(changeset, organizationId, baseUrl, username, password)
 	if err != nil {
 		return "", err
@@ -35,7 +35,7 @@ func Publish(changeset *Changeset, organizationId string, baseUrl string, userna
 	return buf.String(), nil
 }
 
-func MakeRequest(changeset *Changeset, organizationId string, baseUrl string, username string, password string) (*http.Request, error) {
+func MakeRequest(changeset *MetaChangeset, organizationId string, baseUrl string, username string, password string) (*http.Request, error) {
 	body, err := json.MarshalIndent(changeset, "", "  ")
 	if err != nil {
 		return nil, err

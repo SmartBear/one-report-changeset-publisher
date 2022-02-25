@@ -25,7 +25,7 @@ func doMain() error {
 	username := flag.String("username", "", "OneReport username")
 	password := flag.String("password", "", "OneReport password")
 	dryRun := flag.Bool("dry-run", false, "Do not publish, only print")
-	hashPaths := flag.Bool("hash-paths", false, "Hash file paths")
+	usePaths := flag.Bool("use-paths", false, "Use file paths instead of hashed paths")
 	url := flag.String("url", "https://one-report.vercel.app", "OneReport url")
 	flag.Parse()
 
@@ -34,18 +34,18 @@ func doMain() error {
 		return err
 	}
 
-	changeset, err := publisher.MakeChangeset(fromRev, toRev, *hashPaths, remote, repo, nil, nil, true)
+	metaChangeset, err := publisher.MakeMetaChangeset(fromRev, toRev, *usePaths, remote, repo, nil, nil, true)
 	if err != nil {
 		return err
 	}
 	if *dryRun {
-		bytes, err := json.MarshalIndent(changeset, "", "  ")
+		bytes, err := json.MarshalIndent(metaChangeset, "", "  ")
 		if err != nil {
 			return err
 		}
 		fmt.Println(string(bytes))
 	} else {
-		txt, err := publisher.Publish(changeset, *organizationId, *url, *username, *password)
+		txt, err := publisher.Publish(metaChangeset, *organizationId, *url, *username, *password)
 		if err != nil {
 			return err
 		}

@@ -9,7 +9,7 @@ import (
 )
 
 func ExamplePublish() {
-	changeset := &Changeset{
+	changeset := &MetaChangeset{
 		Remote:  "some-remote",
 		FromRev: "aaa",
 		ToRev:   "bbb",

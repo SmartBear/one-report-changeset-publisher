@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestMakeChangesets(t *testing.T) {
+func TestMakeMetaChangesets(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	r1 := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	r2 := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
@@ -23,33 +23,60 @@ func TestMakeChangesets(t *testing.T) {
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
 
-	changesets, err := MakeChangesets(revisions, false, &remote, repo, nil, nil)
+	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(changesets))
-	assert.Equal(t, r1, changesets[0].FromRev)
-	assert.Equal(t, r2, changesets[0].ToRev)
-	assert.Equal(t, -1, changesets[0].Loc)
-	assert.Equal(t, r2, changesets[1].FromRev)
-	assert.Equal(t, r3, changesets[1].ToRev)
-	assert.Equal(t, 821, changesets[1].Loc)
-	assert.Equal(t, 6, changesets[1].Files)
+	assert.Equal(t, 2, len(metaChangesets))
+	assert.Equal(t, r1, metaChangesets[0].FromRev)
+	assert.Equal(t, r2, metaChangesets[0].ToRev)
+	assert.Equal(t, -1, metaChangesets[0].Loc)
+	assert.Equal(t, r2, metaChangesets[1].FromRev)
+	assert.Equal(t, r3, metaChangesets[1].ToRev)
+	assert.Equal(t, 821, metaChangesets[1].Loc)
+	assert.Equal(t, 6, metaChangesets[1].Files)
 }
 
-func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
-	g := gomega.NewGomegaWithT(t)
+func TestMakeMetaChangesetsWithMissingRevision(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
+	r1 := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	r2 := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	rMissing := "3578a4f2dd32911cc48a001ae2aabbcdd1194840"
+	r3 := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	revisions := []string{
+		r1,
+		r2,
+		rMissing,
+		r3,
+	}
+	repo, err := git.PlainOpen(".")
+	assert.NoError(t, err)
+
+	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(metaChangesets))
+	assert.Equal(t, r1, metaChangesets[0].FromRev)
+	assert.Equal(t, r2, metaChangesets[0].ToRev)
+	assert.Equal(t, -1, metaChangesets[0].Loc)
+	assert.Equal(t, r2, metaChangesets[1].FromRev)
+	assert.Equal(t, r3, metaChangesets[1].ToRev)
+	assert.Equal(t, 821, metaChangesets[1].Loc)
+	assert.Equal(t, 6, metaChangesets[1].Files)
+}
+
+func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
+	g := gomega.NewGomegaWithT(t)
+	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
 	fromRev := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	toRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(&fromRev, &toRev, true, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
-	j, err := json.MarshalIndent(changeset, "", "  ")
+	j, err := json.MarshalIndent(metaChangeset, "", "  ")
 	assert.NoError(t, err)
 
 	const expected = `{
-	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
 	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
 	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": -1,
@@ -81,21 +108,21 @@ func TestMakeChangesetNoExcludeAndIgnore(t *testing.T) {
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
 
-func TestMakeChangesetWithExclude(t *testing.T) {
+func TestMakeMetaChangesetWithExclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
-	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
+	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
 	fromRev := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	toRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, false)
+	metaChangeset, err := MakeMetaChangeset(&fromRev, &toRev, true, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, false)
 	assert.NoError(t, err)
 
-	j, err := json.MarshalIndent(changeset, "", "  ")
+	j, err := json.MarshalIndent(metaChangeset, "", "  ")
 	assert.NoError(t, err)
 
 	const expected = `{
-	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
 	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
 	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": -1,
@@ -117,21 +144,21 @@ func TestMakeChangesetWithExclude(t *testing.T) {
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
 
-func TestMakeChangesetWithInclude(t *testing.T) {
+func TestMakeMetaChangesetWithInclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
-	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
+	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
 	fromRev := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	toRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
+	metaChangeset, err := MakeMetaChangeset(&fromRev, &toRev, true, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
 	assert.NoError(t, err)
 
-	j, err := json.MarshalIndent(changeset, "", "  ")
+	j, err := json.MarshalIndent(metaChangeset, "", "  ")
 	assert.NoError(t, err)
 
 	const expected = `{
-	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
 	  "fromRev": "ad2c70149ccc529ab26588cde2af1312e6aa0c06",
 	  "toRev": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": -1,
@@ -153,14 +180,14 @@ func TestMakeChangesetWithInclude(t *testing.T) {
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
 
-func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
+func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	fromRev := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	toRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, nil, nil, false)
+	changeset, err := MakeMetaChangeset(&fromRev, &toRev, true, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -197,21 +224,21 @@ func TestMakeChangesetWithDeleteAndModification(t *testing.T) {
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
 
-func TestMakeChangesetWithMovedFile(t *testing.T) {
+func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
-	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
+	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
 	fromRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	toRev := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeChangeset(&fromRev, &toRev, false, &remote, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(&fromRev, &toRev, true, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
-	j, err := json.MarshalIndent(changeset, "", "  ")
+	j, err := json.MarshalIndent(metaChangeset, "", "  ")
 	assert.NoError(t, err)
 
 	const expected = `{
-	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
 	  "fromRev": "e57bfde5c3591a14c0e199c900174a08b0b94312",
 	  "toRev": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
@@ -228,14 +255,14 @@ func TestMakeChangesetWithMovedFile(t *testing.T) {
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
 
-func TestMakeChangesetWithHashedPaths(t *testing.T) {
+func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	fromRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	toRev := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeChangeset(&fromRev, &toRev, true, &remote, repo, nil, nil, false)
+	changeset, err := MakeMetaChangeset(&fromRev, &toRev, false, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -259,16 +286,16 @@ func TestMakeChangesetWithHashedPaths(t *testing.T) {
 	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
 
-func TestMakeChangesetWithoutRemote(t *testing.T) {
+func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	fromRev := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	toRev := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeChangeset(&fromRev, &toRev, true, nil, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(&fromRev, &toRev, false, nil, repo, nil, nil, false)
 	assert.NoError(t, err)
 
-	j, err := json.MarshalIndent(changeset, "", "  ")
+	j, err := json.MarshalIndent(metaChangeset, "", "  ")
 	assert.NoError(t, err)
 
 	expected := `{

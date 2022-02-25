@@ -1,9 +1,9 @@
 [![Test](https://github.com/SmartBear/one-report-changeset-publisher/actions/workflows/test.yml/badge.svg)](https://github.com/SmartBear/one-report-changeset-publisher/actions/workflows/test.yml)
 # OneReport Changeset Publisher
 
-This is a command line tool that publishes changesets to OneReport.
+This is a command line tool that publishes *meta changesets* to OneReport.
 
-Here is an example changeset:
+Here is an example meta changeset:
 
 ```json
 {
@@ -13,8 +13,8 @@ Here is an example changeset:
   "loc": 9841,
   "changes": [
     {
-      "fromPath": "testdata/b.txt",
-      "toPath": "testdata/c.txt",
+      "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
+      "toPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
       "lineMappings": [
         [10, 11],
         [11, 12],
@@ -29,8 +29,8 @@ Here is an example changeset:
 The `lineMappings` array is a list of 0-indexed line numbers that have changed, using a `[leftLineNumber, rightLineNumber]` mapping. 
 `-1` means the line was not present. See [lhdiff](https://github.com/SmartBear/lhdiff#readme) for more details.
 
-Note that the payload does not include any source code (apart from file paths).
-File paths can also be anonymized if the `-hash-paths` option is specified:
+Note that the payload does not include any source code. Even `fromPath` and `toPath` areanonymized.
+This can be turned off with the `-use-paths` option:
 
 ```json
 {
@@ -40,8 +40,8 @@ File paths can also be anonymized if the `-hash-paths` option is specified:
   "loc": 9841,
   "changes": [
     {
-      "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
-      "toPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
+      "fromPath": "testdata/b.txt",
+      "toPath": "testdata/c.txt",
       "lineMappings": [
         [10, 11],
         [11, 12],

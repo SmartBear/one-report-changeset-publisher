@@ -9,10 +9,11 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
 	"github.com/sabhiram/go-gitignore"
+	"os"
 	"path/filepath"
 )
 
-type Changeset struct {
+type MetaChangeset struct {
 	Remote  string   `json:"remote"`
 	FromRev string   `json:"fromRev"`
 	ToRev   string   `json:"toRev"`
@@ -29,40 +30,43 @@ type Change struct {
 	LineMappings [][]int `json:"lineMappings"`
 }
 
-func MakeChangesets(
+func MakeMetaChangesets(
 	revisions []string,
-	hashPaths bool,
+	usePaths bool,
 	remote *string,
 	repo *git.Repository,
 	excluded *ignore.GitIgnore,
 	included *ignore.GitIgnore,
-) ([]Changeset, error) {
+) ([]*MetaChangeset, error) {
 	if len(revisions) < 2 {
 		return nil, fmt.Errorf("need 2 or more revisions to make changesets, got %d", len(revisions))
 	}
-	changesets := make([]Changeset, len(revisions)-1)
+	var changesets []*MetaChangeset
+	fromRev := revisions[0]
 	for i, toRev := range revisions[1:] {
-		fromRev := revisions[i]
 		countFeatures := i == len(revisions)-2
-		changeset, err := MakeChangeset(&fromRev, &toRev, hashPaths, remote, repo, excluded, included, countFeatures)
-		if err != nil {
-			return nil, err
+		changeset, _ := MakeMetaChangeset(&fromRev, &toRev, usePaths, remote, repo, excluded, included, countFeatures)
+		// We are ignoring any errors that come back from MakeMetaChangeset.
+		// It will return an error if the fromRev or toRev is not found, and that sometimes happens such as for
+		// https://github.com/square/okhttp/commit/1cbe85cca3d523945d5759bc013beff56cee9277
+		if changeset != nil {
+			changesets = append(changesets, changeset)
+			fromRev = toRev
 		}
-		changesets[i] = *changeset
 	}
 	return changesets, nil
 }
 
-func MakeChangeset(
+func MakeMetaChangeset(
 	fromRev *string,
 	toRev *string,
-	hashPaths bool,
+	usePaths bool,
 	remote *string,
 	repo *git.Repository,
 	excluded *ignore.GitIgnore,
 	included *ignore.GitIgnore,
 	countFeatures bool,
-) (*Changeset, error) {
+) (*MetaChangeset, error) {
 	contextSize := 4
 
 	worktree, err := repo.Worktree()
@@ -188,12 +192,12 @@ func MakeChangeset(
 
 		var fromPath string
 		var toPath string
-		if hashPaths {
-			fromPath = hash(gitChange.From.Name)
-			toPath = hash(gitChange.To.Name)
-		} else {
+		if usePaths {
 			fromPath = gitChange.From.Name
 			toPath = gitChange.To.Name
+		} else {
+			fromPath = hash(gitChange.From.Name)
+			toPath = hash(gitChange.To.Name)
 		}
 
 		change := Change{
@@ -213,7 +217,7 @@ func MakeChangeset(
 		}
 	}
 
-	changeset := &Changeset{
+	changeset := &MetaChangeset{
 		Remote:  *remote,
 		FromRev: *fromRev,
 		ToRev:   *toRev,
@@ -254,6 +258,7 @@ func TextContents(tree *object.Tree, excluded *ignore.GitIgnore, included *ignor
 func GetTree(r *git.Repository, revision string) (*object.Tree, error) {
 	h, err := r.ResolveRevision(plumbing.Revision(revision))
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "Revision not found? %s\n", revision)
 		return nil, err
 	}
 
