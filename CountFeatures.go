@@ -38,7 +38,7 @@ func CountFeatures(repo *git.Repository, revision string, excluded *ignore.GitIg
 		err = nil
 		iter.Close()
 	}
-	return loc, files, nil
+	return loc, files, err
 }
 
 // https://stackoverflow.com/questions/47240127/fastest-way-to-find-number-of-lines-in-go
