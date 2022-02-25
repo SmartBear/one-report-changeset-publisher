@@ -9,6 +9,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
 	"github.com/sabhiram/go-gitignore"
+	"path/filepath"
 )
 
 type Changeset struct {
@@ -64,14 +65,18 @@ func MakeChangeset(
 ) (*Changeset, error) {
 	contextSize := 4
 
-	var err error
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return nil, err
+	}
+
 	if excluded == nil {
 		// Ignore errors
-		excluded, _ = ignore.CompileIgnoreFile(".onereportignore")
+		excluded, _ = ignore.CompileIgnoreFile(filepath.Join(worktree.Filesystem.Root(), ".onereportignore"))
 	}
 	if included == nil {
 		// Ignore errors
-		included, _ = ignore.CompileIgnoreFile(".onereportinclude")
+		included, _ = ignore.CompileIgnoreFile(filepath.Join(worktree.Filesystem.Root(), ".onereportinclude"))
 	}
 
 	if remote == nil {
