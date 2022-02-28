@@ -8,9 +8,12 @@ Here is an example meta changeset:
 ```json
 {
   "remote": "git@github.com:MyOrg/my-project.git",
-  "fromRev": "400a62e39d39d231d8160002dfb7ed95a004278b",
-  "toRev": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
+  "parentShas": [
+    "400a62e39d39d231d8160002dfb7ed95a004278b"
+  ],
+  "sha": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
   "loc": 9841,
+  "files": 73,
   "changes": [
     {
       "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
@@ -35,9 +38,12 @@ This can be turned off with the `-use-paths` option:
 ```json
 {
   "remote": "git@github.com:MyOrg/my-project.git",
-  "fromRev": "400a62e39d39d231d8160002dfb7ed95a004278b",
-  "toRev": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
+  "parentShas": [
+    "400a62e39d39d231d8160002dfb7ed95a004278b"
+  ],
+  "sha": "f7d967d6d4f7adc1d6657bda88f4e976c879d74c",
   "loc": 9841,
+  "files": 73,
   "changes": [
     {
       "fromPath": "testdata/b.txt",

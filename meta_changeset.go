@@ -14,13 +14,13 @@ import (
 )
 
 type MetaChangeset struct {
-	Remote  string   `json:"remote"`
-	FromRev string   `json:"fromRev"`
-	ToRev   string   `json:"toRev"`
-	Changes []Change `json:"changes"`
-	// The total number of lines of code in ToRev (filtered by .onereportinclude and .onereportexluce
+	Remote     string   `json:"remote"`
+	ParentShas []string `json:"parentShas"`
+	Sha        string   `json:"sha"`
+	Changes    []Change `json:"changes"`
+	// The total number of lines of code in Sha (filtered by .onereportinclude and .onereportexluce
 	Loc int `json:"loc"`
-	// The total number of files in ToRev (filtered by .onereportinclude and .onereportexluce
+	// The total number of files in Sha (filtered by .onereportinclude and .onereportexluce
 	Files int `json:"files"`
 }
 
@@ -37,29 +37,33 @@ func MakeMetaChangesets(
 	repo *git.Repository,
 	excluded *ignore.GitIgnore,
 	included *ignore.GitIgnore,
+	onlyCountFeaturesForLastChangeset bool,
 ) ([]*MetaChangeset, error) {
-	if len(revisions) < 2 {
-		return nil, fmt.Errorf("need 2 or more revisions to make changesets, got %d", len(revisions))
-	}
 	var changesets []*MetaChangeset
-	fromRev := revisions[0]
-	for i, toRev := range revisions[1:] {
-		countFeatures := i == len(revisions)-2
-		changeset, _ := MakeMetaChangeset(&fromRev, &toRev, usePaths, remote, repo, excluded, included, countFeatures)
+	for i, toRev := range revisions {
+		countFeatures := true
+		if onlyCountFeaturesForLastChangeset {
+			countFeatures = i == len(revisions)-2
+		}
+
+		changeset, err := MakeMetaChangeset(nil, &toRev, usePaths, remote, repo, excluded, included, countFeatures)
+
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err.Error())
+		}
 		// We are ignoring any errors that come back from MakeMetaChangeset.
 		// It will return an error if the fromRev or toRev is not found, and that sometimes happens such as for
 		// https://github.com/square/okhttp/commit/1cbe85cca3d523945d5759bc013beff56cee9277
 		if changeset != nil {
 			changesets = append(changesets, changeset)
-			fromRev = toRev
 		}
 	}
 	return changesets, nil
 }
 
 func MakeMetaChangeset(
-	fromRev *string,
-	toRev *string,
+	explicitFromSha *string,
+	sha *string,
 	usePaths bool,
 	remote *string,
 	repo *git.Repository,
@@ -95,135 +99,133 @@ func MakeMetaChangeset(
 		}
 	}
 
-	if toRev == nil {
+	if sha == nil {
 		head, err := repo.Head()
 		if err != nil {
 			return nil, err
 		}
 		hash := head.Hash().String()
-		toRev = &hash
+		sha = &hash
+	}
+	toTree, err := GetTree(repo, *sha)
+	if err != nil {
+		return nil, err
 	}
 
-	if fromRev == nil {
-		toCommit, err := repo.CommitObject(plumbing.NewHash(*toRev))
+	var parentShas []string
+	if explicitFromSha != nil {
+		parentShas = []string{*explicitFromSha}
+	} else {
+		toCommit, err := repo.CommitObject(plumbing.NewHash(*sha))
 		if err != nil {
 			return nil, err
 		}
-		if len(toCommit.ParentHashes) != 1 {
-			return nil, fmt.Errorf(
-				"please specify --fromRev - the toRev=%s has %d parents, and I can only guess if there is exactly 1",
-				*toRev,
-				len(toCommit.ParentHashes),
-			)
+		for _, parentHash := range toCommit.ParentHashes {
+			parentShas = append(parentShas, parentHash.String())
 		}
-		hash := toCommit.ParentHashes[0].String()
-		fromRev = &hash
-	}
-
-	fromTree, err := GetTree(repo, *fromRev)
-	if err != nil {
-		return nil, err
-	}
-
-	toTree, err := GetTree(repo, *toRev)
-	if err != nil {
-		return nil, err
-	}
-
-	gitChanges, err := fromTree.Diff(toTree)
-	if err != nil {
-		return nil, err
 	}
 
 	changes := make([]Change, 0)
 
-	for _, gitChange := range gitChanges {
-		action, err := gitChange.Action()
+	for _, fromSha := range parentShas {
+		fromTree, err := GetTree(repo, fromSha)
 		if err != nil {
 			return nil, err
 		}
 
-		fromContents := ""
-		toContents := ""
-		var ok bool
-
-		switch action {
-		case merkletrie.Insert:
-			toContents, ok, err = TextContents(toTree, excluded, included, gitChange.To.Name)
-			if err != nil {
-				return nil, err
-			}
-			if !ok {
-				continue
-			}
-		case merkletrie.Delete:
-			fromContents, ok, err = TextContents(fromTree, excluded, included, gitChange.From.Name)
-			if err != nil {
-				return nil, err
-			}
-			if !ok {
-				continue
-			}
-		case merkletrie.Modify:
-			fromContents, ok, err = TextContents(fromTree, excluded, included, gitChange.From.Name)
-			if err != nil {
-				return nil, err
-			}
-			if !ok {
-				continue
-			}
-
-			toContents, ok, err = TextContents(toTree, excluded, included, gitChange.To.Name)
-			if err != nil {
-				return nil, err
-			}
-			if !ok {
-				continue
-			}
-
-		default:
-			panic(fmt.Sprintf("unsupported action: %d", action))
-		}
-
-		mapping, err := lhdiff.Lhdiff(fromContents, toContents, contextSize, false)
+		gitChanges, err := fromTree.Diff(toTree)
 		if err != nil {
 			return nil, err
 		}
 
-		var fromPath string
-		var toPath string
-		if usePaths {
-			fromPath = gitChange.From.Name
-			toPath = gitChange.To.Name
-		} else {
-			fromPath = hash(gitChange.From.Name)
-			toPath = hash(gitChange.To.Name)
-		}
+		for _, gitChange := range gitChanges {
+			action, err := gitChange.Action()
+			if err != nil {
+				return nil, err
+			}
 
-		change := Change{
-			FromPath:     fromPath,
-			ToPath:       toPath,
-			LineMappings: mapping,
+			fromContents := ""
+			toContents := ""
+			var ok bool
+
+			switch action {
+			case merkletrie.Insert:
+				toContents, ok, err = TextContents(toTree, excluded, included, gitChange.To.Name)
+				if err != nil {
+					return nil, err
+				}
+				if !ok {
+					continue
+				}
+			case merkletrie.Delete:
+				fromContents, ok, err = TextContents(fromTree, excluded, included, gitChange.From.Name)
+				if err != nil {
+					return nil, err
+				}
+				if !ok {
+					continue
+				}
+			case merkletrie.Modify:
+				fromContents, ok, err = TextContents(fromTree, excluded, included, gitChange.From.Name)
+				if err != nil {
+					return nil, err
+				}
+				if !ok {
+					continue
+				}
+
+				toContents, ok, err = TextContents(toTree, excluded, included, gitChange.To.Name)
+				if err != nil {
+					return nil, err
+				}
+				if !ok {
+					continue
+				}
+
+			default:
+				panic(fmt.Sprintf("unsupported action: %d", action))
+			}
+
+			mapping, err := lhdiff.Lhdiff(fromContents, toContents, contextSize, false)
+			if err != nil {
+				return nil, err
+			}
+
+			var fromPath string
+			var toPath string
+			if usePaths {
+				fromPath = gitChange.From.Name
+				toPath = gitChange.To.Name
+			} else {
+				fromPath = hash(gitChange.From.Name)
+				toPath = hash(gitChange.To.Name)
+			}
+
+			change := Change{
+				FromPath:     fromPath,
+				ToPath:       toPath,
+				LineMappings: mapping,
+			}
+			changes = append(changes, change)
 		}
-		changes = append(changes, change)
 	}
 
 	loc := -1
 	files := -1
 	if countFeatures {
-		loc, files, err = CountFeatures(repo, *toRev, excluded, included)
+		loc, files, err = CountFeatures(repo, *sha, excluded, included)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	changeset := &MetaChangeset{
-		Remote:  *remote,
-		FromRev: *fromRev,
-		ToRev:   *toRev,
-		Changes: changes,
-		Loc:     loc,
-		Files:   files,
+		Remote:     *remote,
+		ParentShas: parentShas,
+		Sha:        *sha,
+		Changes:    changes,
+		Loc:        loc,
+		Files:      files,
 	}
 	return changeset, nil
 }
@@ -255,10 +257,10 @@ func TextContents(tree *object.Tree, excluded *ignore.GitIgnore, included *ignor
 	return contents, true, err
 }
 
-func GetTree(r *git.Repository, revision string) (*object.Tree, error) {
-	h, err := r.ResolveRevision(plumbing.Revision(revision))
+func GetTree(r *git.Repository, sha string) (*object.Tree, error) {
+	h, err := r.ResolveRevision(plumbing.Revision(sha))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Revision not found? %s\n", revision)
+		fmt.Fprintf(os.Stderr, "Sha not found: %s\n", sha)
 		return nil, err
 	}
 

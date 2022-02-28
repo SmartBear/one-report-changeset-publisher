@@ -20,7 +20,7 @@ func main() {
 func doMain() error {
 	organizationId := flag.String("organization-id", "", "OneReport organization id")
 	remote := flag.String("remote", "", "Git remote (default is the origin remote in .git/config)")
-	fromRev := flag.String("from-rev", "", "From git revision (default is the single parent of to-rev)")
+	fromRev := flag.String("from-rev", "", "From git revision (default is all the the parents of to-rev)")
 	toRev := flag.String("to-rev", "", "To git revision (default is the HEAD revision)")
 	username := flag.String("username", "", "OneReport username")
 	password := flag.String("password", "", "OneReport password")
