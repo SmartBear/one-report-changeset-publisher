@@ -10,7 +10,7 @@ import (
 )
 
 // CountFeatures counts how many lines of code, and how many files there are.
-func CountFeatures(repo *git.Repository, revision string, excluded *ignore.GitIgnore, included *ignore.GitIgnore) (int, int, error) {
+func CountFeatures(repo *git.Repository, revision string, exclude *ignore.GitIgnore, include *ignore.GitIgnore, countLines bool) (int, int, error) {
 	tree, err := GetTree(repo, revision)
 	if err != nil {
 		return -1, -1, err
@@ -24,13 +24,22 @@ func CountFeatures(repo *git.Repository, revision string, excluded *ignore.GitIg
 	for err == nil {
 		name, entry, err = iter.Next()
 		if entry.Mode.IsFile() {
-			contents, ok, err2 := TextContents(tree, excluded, included, name)
-			if err2 != nil {
-				return -1, -1, err2
-			}
-			if ok {
-				loc += lineCount(contents)
-				files += 1
+			if FileIncluded(exclude, include, name) {
+				file, err := textFile(tree, name)
+				if err != nil {
+					return -1, -1, err
+				}
+				if file != nil {
+					files += 1
+
+					if countLines {
+						contents, err := file.Contents()
+						if err != nil {
+							return -1, -1, err
+						}
+						loc += lineCount(contents)
+					}
+				}
 			}
 		}
 	}
@@ -38,7 +47,11 @@ func CountFeatures(repo *git.Repository, revision string, excluded *ignore.GitIg
 		err = nil
 		iter.Close()
 	}
-	return loc, files, err
+	if countLines {
+		return loc, files, err
+	} else {
+		return -1, files, err
+	}
 }
 
 // https://stackoverflow.com/questions/47240127/fastest-way-to-find-number-of-lines-in-go

@@ -23,7 +23,7 @@ func TestMakeMetaChangesets(t *testing.T) {
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
 
-	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, false)
+	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(metaChangesets))
 	assert.Equal(t, 817, metaChangesets[0].Loc)
@@ -49,7 +49,7 @@ func TestMakeMetaChangesetsWithMissingRevision(t *testing.T) {
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
 
-	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, false)
+	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, false, false)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(metaChangesets))
 }
@@ -61,7 +61,7 @@ func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -107,7 +107,7 @@ func TestMakeMetaChangesetWithExclude(t *testing.T) {
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, false, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -143,7 +143,7 @@ func TestMakeMetaChangesetWithInclude(t *testing.T) {
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -179,7 +179,7 @@ func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 	sha := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false)
+	changeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -223,7 +223,7 @@ func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -254,7 +254,7 @@ func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeMetaChangeset(&parentShas, &sha, false, &remote, repo, nil, nil, false)
+	changeset, err := MakeMetaChangeset(&parentShas, &sha, false, &remote, repo, nil, nil, false, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -284,7 +284,7 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, false, nil, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, false, nil, repo, nil, nil, false, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
