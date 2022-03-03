@@ -37,12 +37,11 @@ func MakeMetaChangesets(
 	repo *git.Repository,
 	excluded *ignore.GitIgnore,
 	included *ignore.GitIgnore,
-	countFiles bool,
-	countLines bool,
+	includeLines bool,
 ) ([]*MetaChangeset, error) {
 	var changesets []*MetaChangeset
 	for _, toRev := range revisions {
-		changeset, err := MakeMetaChangeset(nil, &toRev, usePaths, remote, repo, excluded, included, countFiles, countLines)
+		changeset, err := MakeMetaChangeset(nil, &toRev, usePaths, remote, repo, excluded, included, includeLines)
 
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err.Error())
@@ -65,8 +64,7 @@ func MakeMetaChangeset(
 	repo *git.Repository,
 	exclude *ignore.GitIgnore,
 	include *ignore.GitIgnore,
-	countFiles bool,
-	countLines bool,
+	includeLines bool,
 ) (*MetaChangeset, error) {
 	contextSize := 4
 
@@ -141,69 +139,59 @@ func MakeMetaChangeset(
 				return nil, err
 			}
 
-			fromContents := ""
-			toContents := ""
+			var fromFile *object.File
+			var toFile *object.File
 
-			switch action {
-			case merkletrie.Insert:
-				if FileIncluded(exclude, include, gitChange.To.Name) {
-					contents, toFile, err := textContents(toTree, gitChange.To.Name)
-					if err != nil {
-						return nil, err
-					}
-					if toFile == nil {
-						continue
-					}
-					toContents = contents
-				} else {
+			if action == merkletrie.Delete || action == merkletrie.Modify {
+				if !FileIncluded(exclude, include, gitChange.From.Name) {
 					continue
 				}
-			case merkletrie.Delete:
-				if FileIncluded(exclude, include, gitChange.From.Name) {
-					contents, fromFile, err := textContents(fromTree, gitChange.From.Name)
-					if err != nil {
-						return nil, err
-					}
-					if fromFile == nil {
-						continue
-					}
-					fromContents = contents
-				} else {
+				fromFile, err = textFile(fromTree, gitChange.From.Name)
+				if err != nil {
+					return nil, err
+				}
+				if fromFile == nil {
 					continue
 				}
-			case merkletrie.Modify:
-				if FileIncluded(exclude, include, gitChange.From.Name) {
-					contents, fromFile, err := textContents(fromTree, gitChange.From.Name)
-					if err != nil {
-						return nil, err
-					}
-					if fromFile == nil {
-						continue
-					}
-					fromContents = contents
-				} else {
-					continue
-				}
-
-				if FileIncluded(exclude, include, gitChange.To.Name) {
-					contents, toFile, err := textContents(toTree, gitChange.To.Name)
-					if err != nil {
-						return nil, err
-					}
-					if toFile == nil {
-						continue
-					}
-					toContents = contents
-				} else {
-					continue
-				}
-			default:
-				panic(fmt.Sprintf("unsupported action: %d", action))
 			}
 
-			mapping, err := lhdiff.Lhdiff(fromContents, toContents, contextSize, false)
-			if err != nil {
-				return nil, err
+			if action == merkletrie.Insert || action == merkletrie.Modify {
+				if !FileIncluded(exclude, include, gitChange.To.Name) {
+					continue
+				}
+				toFile, err = textFile(toTree, gitChange.To.Name)
+				if err != nil {
+					return nil, err
+				}
+				if toFile == nil {
+					continue
+				}
+			}
+
+			var lineMappings [][]int
+			if includeLines {
+				fromContents := ""
+				toContents := ""
+
+				if fromFile != nil {
+					fromContents, err = fromFile.Contents()
+					if err != nil {
+						return nil, err
+					}
+				}
+				if toFile != nil {
+					toContents, err = toFile.Contents()
+					if err != nil {
+						return nil, err
+					}
+				}
+
+				lineMappings, err = lhdiff.Lhdiff(fromContents, toContents, contextSize, false)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				lineMappings = make([][]int, 0)
 			}
 
 			var fromPath string
@@ -219,19 +207,15 @@ func MakeMetaChangeset(
 			change := Change{
 				FromPath:     fromPath,
 				ToPath:       toPath,
-				LineMappings: mapping,
+				LineMappings: lineMappings,
 			}
 			changes = append(changes, change)
 		}
 	}
 
-	loc := -1
-	files := -1
-	if countFiles || countLines {
-		loc, files, err = CountFeatures(repo, *sha, exclude, include, countLines)
-		if err != nil {
-			return nil, err
-		}
+	loc, files, err := CountFeatures(repo, *sha, exclude, include, includeLines)
+	if err != nil {
+		return nil, err
 	}
 
 	changeset := &MetaChangeset{
@@ -250,18 +234,6 @@ func hash(s string) string {
 	h.Write([]byte(s))
 	bs := h.Sum(nil)
 	return fmt.Sprintf("%x", bs)
-}
-
-func textContents(tree *object.Tree, name string) (string, *object.File, error) {
-	file, err := textFile(tree, name)
-	if err != nil {
-		return "", file, err
-	}
-	if file == nil {
-		return "", file, err
-	}
-	contents, err := file.Contents()
-	return contents, file, err
 }
 
 func textFile(tree *object.Tree, name string) (*object.File, error) {

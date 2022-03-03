@@ -23,7 +23,7 @@ func TestMakeMetaChangesets(t *testing.T) {
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
 
-	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, true, true)
+	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(metaChangesets))
 	assert.Equal(t, 817, metaChangesets[0].Loc)
@@ -49,7 +49,7 @@ func TestMakeMetaChangesetsWithMissingRevision(t *testing.T) {
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
 
-	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, false, false)
+	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(metaChangesets))
 }
@@ -61,7 +61,7 @@ func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false, false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, true)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -71,8 +71,8 @@ func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
 	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
 	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
-      "loc": -1,
-      "files": -1,
+      "loc": 823,
+      "files": 7,
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -107,7 +107,7 @@ func TestMakeMetaChangesetWithExclude(t *testing.T) {
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, false, false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, true)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -117,8 +117,8 @@ func TestMakeMetaChangesetWithExclude(t *testing.T) {
 	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
 	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
 	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
-      "loc": -1,
-      "files": -1,
+      "loc": 820,
+      "files": 6,
 	  "changes": [
 		{
 		  "fromPath": "",
@@ -143,7 +143,7 @@ func TestMakeMetaChangesetWithInclude(t *testing.T) {
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false, false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -154,17 +154,12 @@ func TestMakeMetaChangesetWithInclude(t *testing.T) {
 	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
 	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": -1,
-      "files": -1,
+      "files": 1,
 	  "changes": [
 		{
 		  "fromPath": "",
 		  "toPath": "testdata/b.txt",
-		  "lineMappings": [
-			[-1,0],
-			[-1,1],
-			[-1,2],
-			[-1,3]
-		  ]
+		  "lineMappings": []
 		}
 	  ]
 	}`
@@ -179,7 +174,7 @@ func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 	sha := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false, false)
+	changeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -190,25 +185,17 @@ func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 	  "parentShas": ["1ae2aabbcdd11948403578a4f2dd32911cc48a00"],
 	  "sha": "e57bfde5c3591a14c0e199c900174a08b0b94312",
       "loc": -1,
-      "files": -1,
+      "files": 6,
 	  "changes": [
 		{
 		  "fromPath": "testdata/a.txt",
 		  "toPath": "",
-		  "lineMappings": [
-			[0,-1],
-			[1,-1],
-			[2,-1],
-			[3,-1]
-		  ]
+		  "lineMappings": []
 		},
 		{
 		  "fromPath": "testdata/b.txt",
 		  "toPath": "testdata/b.txt",
-		  "lineMappings": [
-			[3,4],
-			[-1,3]
-		  ]
+		  "lineMappings": []
 		}
 	  ]
 	}`
@@ -223,7 +210,7 @@ func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false, false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -234,7 +221,7 @@ func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 	  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 	  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
-      "files": -1,
+      "files": 6,
 	  "changes": [
 		{
 		  "fromPath": "testdata/b.txt",
@@ -254,7 +241,7 @@ func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	changeset, err := MakeMetaChangeset(&parentShas, &sha, false, &remote, repo, nil, nil, false, false)
+	changeset, err := MakeMetaChangeset(&parentShas, &sha, false, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -265,7 +252,7 @@ func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 	  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 	  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
-      "files": -1,
+      "files": 6,
 	  "changes": [
 		{
 		  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
@@ -284,7 +271,7 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.PlainOpen(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, false, nil, repo, nil, nil, false, false)
+	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, false, nil, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -295,7 +282,7 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 	  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 	  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
-      "files": -1,
+      "files": 6,
 	  "changes": [
 		{
 		  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
@@ -312,7 +299,7 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 		  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 		  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
 		  "loc": -1,
-		  "files": -1,
+		  "files": 6,
 		  "changes": [
 			{
 			  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
