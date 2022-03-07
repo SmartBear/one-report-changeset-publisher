@@ -11,6 +11,7 @@ import (
 func ExamplePublish() {
 	changeset := &MetaChangeset{
 		Remote:     "some-remote",
+		UnixTime:   1644410531,
 		ParentShas: []string{"aaa"},
 		Sha:        "bbb",
 		Changes:    make([]Change, 0),
@@ -43,6 +44,7 @@ func ExamplePublish() {
 	//
 	// {
 	//   "remote": "some-remote",
+	//   "unixTime": 1644410531,
 	//   "parentShas": [
 	//     "aaa"
 	//   ],

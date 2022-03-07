@@ -11,7 +11,7 @@ import (
 
 // CountFeatures counts how many lines of code, and how many files there are.
 func CountFeatures(repo *git.Repository, revision string, exclude *ignore.GitIgnore, include *ignore.GitIgnore, countLines bool) (int, int, error) {
-	tree, err := GetTree(repo, revision)
+	tree, err := getTree(repo, revision)
 	if err != nil {
 		return -1, -1, err
 	}

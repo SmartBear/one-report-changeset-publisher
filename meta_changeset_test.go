@@ -69,6 +69,7 @@ func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
+      "unixTime": 1644410531,
 	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
 	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": 823,
@@ -115,6 +116,7 @@ func TestMakeMetaChangesetWithExclude(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
+      "unixTime": 1644410531,
 	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
 	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": 820,
@@ -151,6 +153,7 @@ func TestMakeMetaChangesetWithInclude(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
+      "unixTime": 1644410531,
 	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
 	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": -1,
@@ -182,6 +185,7 @@ func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+      "unixTime": 1644410531,
 	  "parentShas": ["1ae2aabbcdd11948403578a4f2dd32911cc48a00"],
 	  "sha": "e57bfde5c3591a14c0e199c900174a08b0b94312",
       "loc": -1,
@@ -218,6 +222,7 @@ func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
+      "unixTime": 1644410531,
 	  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 	  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
@@ -249,6 +254,7 @@ func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+      "unixTime": 1644410531,
 	  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 	  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
@@ -279,6 +285,7 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 
 	expected := `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
+      "unixTime": 1644410531,
 	  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 	  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
