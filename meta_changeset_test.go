@@ -259,6 +259,7 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 		// Different remote on GitHub Actions
 		expected = `{
 		  "remote": "https://github.com/SmartBear/one-report-changeset-publisher",
+          "unixTime": 1644410531,
 		  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 		  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
 		  "loc": -1,
