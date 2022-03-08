@@ -9,7 +9,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
 	"github.com/sabhiram/go-gitignore"
-	"os"
 	"path/filepath"
 )
 
@@ -29,32 +28,6 @@ type Change struct {
 	FromPath     string  `json:"fromPath"`
 	ToPath       string  `json:"toPath"`
 	LineMappings [][]int `json:"lineMappings"`
-}
-
-func MakeMetaChangesets(
-	revisions []string,
-	usePaths bool,
-	remote *string,
-	repo *git.Repository,
-	excluded *ignore.GitIgnore,
-	included *ignore.GitIgnore,
-	includeLines bool,
-) ([]*MetaChangeset, error) {
-	var changesets []*MetaChangeset
-	for _, toRev := range revisions {
-		changeset, err := MakeMetaChangeset(nil, &toRev, usePaths, remote, repo, excluded, included, includeLines)
-
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Couln't process sha %s\n%s\n", toRev, err.Error())
-		}
-		// We are ignoring any errors that come back from MakeMetaChangeset.
-		// It will return an error if the fromRev or toRev is not found, and that sometimes happens such as for
-		// https://github.com/square/okhttp/commit/1cbe85cca3d523945d5759bc013beff56cee9277
-		if changeset != nil {
-			changesets = append(changesets, changeset)
-		}
-	}
-	return changesets, nil
 }
 
 func MakeMetaChangeset(

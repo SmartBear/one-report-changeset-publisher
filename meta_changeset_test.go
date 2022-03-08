@@ -10,50 +10,6 @@ import (
 	"testing"
 )
 
-func TestMakeMetaChangesets(t *testing.T) {
-	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	r1 := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
-	r2 := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	r3 := "e57bfde5c3591a14c0e199c900174a08b0b94312"
-	revisions := []string{
-		r1,
-		r2,
-		r3,
-	}
-	repo, err := git.PlainOpen(".")
-	assert.NoError(t, err)
-
-	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, true)
-	assert.NoError(t, err)
-	assert.Equal(t, 3, len(metaChangesets))
-	assert.Equal(t, 817, metaChangesets[0].Loc)
-	assert.Equal(t, 5, metaChangesets[0].Files)
-	assert.Equal(t, 823, metaChangesets[1].Loc)
-	assert.Equal(t, 7, metaChangesets[1].Files)
-	assert.Equal(t, 821, metaChangesets[2].Loc)
-	assert.Equal(t, 6, metaChangesets[2].Files)
-}
-
-func TestMakeMetaChangesetsWithMissingRevision(t *testing.T) {
-	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	r1 := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
-	r2 := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	rMissing := "3578a4f2dd32911cc48a001ae2aabbcdd1194840"
-	r3 := "e57bfde5c3591a14c0e199c900174a08b0b94312"
-	revisions := []string{
-		r1,
-		r2,
-		rMissing,
-		r3,
-	}
-	repo, err := git.PlainOpen(".")
-	assert.NoError(t, err)
-
-	metaChangesets, err := MakeMetaChangesets(revisions, false, &remote, repo, nil, nil, false)
-	assert.NoError(t, err)
-	assert.Equal(t, 3, len(metaChangesets))
-}
-
 func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"

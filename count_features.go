@@ -25,14 +25,14 @@ func CountFeatures(repo *git.Repository, revision string, exclude *ignore.GitIgn
 		name, entry, err = iter.Next()
 		if entry.Mode.IsFile() {
 			if FileIncluded(exclude, include, name) {
-				file, err := textFile(tree, name)
-				if err != nil {
-					return -1, -1, err
-				}
-				if file != nil {
-					files += 1
+				files += 1
 
-					if countLines {
+				if countLines {
+					file, err := textFile(tree, name)
+					if err != nil {
+						return -1, -1, err
+					}
+					if file != nil {
 						contents, err := file.Contents()
 						if err != nil {
 							return -1, -1, err
