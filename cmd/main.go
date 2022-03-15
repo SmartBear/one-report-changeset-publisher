@@ -34,7 +34,7 @@ func doMain() error {
 		return err
 	}
 
-	metaChangeset, err := publisher.MakeMetaChangeset(oldSha, sha, *usePaths, remote, repo, nil, nil, true)
+	metaChangeset, err := publisher.MakeMetaChangeset(*oldSha, *sha, *usePaths, *remote, repo, nil, nil, true)
 	if err != nil {
 		return err
 	}

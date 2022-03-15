@@ -13,11 +13,11 @@ import (
 func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
-	oldShas := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	oldSha := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&oldShas, &sha, true, &remote, repo, nil, nil, true)
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, nil, true)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -60,11 +60,11 @@ func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 func TestMakeMetaChangesetWithExclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
-	oldShas := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	oldSha := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&oldShas, &sha, true, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, true)
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, true)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -95,13 +95,12 @@ func TestMakeMetaChangesetWithExclude(t *testing.T) {
 }
 
 func TestMakeMetaChangesetWithInclude(t *testing.T) {
-	//g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
-	oldShas := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	oldSha := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&oldShas, &sha, true, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
 	assert.NoError(t, err)
 
 	expected := &MetaChangeset{
@@ -120,39 +119,43 @@ func TestMakeMetaChangesetWithInclude(t *testing.T) {
 		},
 	}
 	assert.Equal(t, expected, metaChangeset)
+}
 
-	//j, err := json.MarshalIndent(metaChangeset, "", "  ")
-	//assert.NoError(t, err)
-	//
-	//
-	//
-	//const expected = `{
-	//  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
-    //  "unixTime": 1644410531,
-	//  "oldShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
-	//  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
-    //  "loc": -1,
-    //  "files": 1,
-	//  "changes": [
-	//	{
-	//	  "oldPath": "",
-	//	  "newPath": "testdata/b.txt",
-	//	  "lineMappings": []
-	//	}
-	//  ]
-	//}`
-	//
-	//g.Ω(string(j)).Should(gomega.MatchJSON(expected))
+func TestMakeMetaChangesetWithNilOldSha(t *testing.T) {
+	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
+	oldSha := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	repo, err := git.OpenRepository(".")
+	assert.NoError(t, err)
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
+	assert.NoError(t, err)
+
+	expected := &MetaChangeset{
+		Remote:   "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
+		UnixTime: 1644410531,
+		OldShas:  []string{"ad2c70149ccc529ab26588cde2af1312e6aa0c06"},
+		Sha:      "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+		Loc:      -1,
+		Files:    1,
+		Changes: []Change{
+			{
+				OldPath:      "",
+				NewPath:      "testdata/b.txt",
+				LineMappings: [][]int{},
+			},
+		},
+	}
+	assert.Equal(t, expected, metaChangeset)
 }
 
 func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	oldShas := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	oldSha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	sha := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	changeset, err := MakeMetaChangeset(&oldShas, &sha, true, &remote, repo, nil, nil, false)
+	changeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -185,11 +188,11 @@ func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
-	oldShas := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	oldSha := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&oldShas, &sha, true, &remote, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -217,11 +220,11 @@ func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	oldShas := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	oldSha := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	changeset, err := MakeMetaChangeset(&oldShas, &sha, false, &remote, repo, nil, nil, false)
+	changeset, err := MakeMetaChangeset(oldSha, sha, false, remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -252,7 +255,7 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
 	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&oldShas, &sha, false, nil, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(oldShas, sha, false, "", repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")

@@ -28,10 +28,10 @@ type Change struct {
 }
 
 func MakeMetaChangeset(
-	oldSha *string,
-	sha *string,
+	oldSha string,
+	sha string,
 	usePaths bool,
-	remote *string,
+	remote string,
 	repo *git.Repository,
 	exclude *ignore.GitIgnore,
 	include *ignore.GitIgnore,
@@ -44,25 +44,24 @@ func MakeMetaChangeset(
 		include, _ = ignore.CompileIgnoreFile(filepath.Join(repo.Workdir(), ".onereportinclude"))
 	}
 
-	if remote == nil {
+	if remote == "" {
 		gitRemote, err := repo.Remotes.Lookup("origin")
 		if err != nil {
 			return nil, fmt.Errorf("please specify --remote since this repo does not have an origin remote")
 		}
-		remoteUrl := gitRemote.Url()
-		remote = &remoteUrl
+		remote = gitRemote.Url()
 	}
 
 	var newOid *git.Oid
 	var err error
-	if *sha == "" {
+	if sha == "" {
 		head, err := repo.Head()
 		if err != nil {
 			return nil, err
 		}
 		newOid = head.Target()
 	} else {
-		newOid, err = git.NewOid(*sha)
+		newOid, err = git.NewOid(sha)
 		if err != nil {
 			return nil, err
 		}
@@ -79,8 +78,8 @@ func MakeMetaChangeset(
 	}
 
 	var oldCommits []*git.Commit
-	if *oldSha != "" {
-		oldOid, err := git.NewOid(*oldSha)
+	if oldSha != "" {
+		oldOid, err := git.NewOid(oldSha)
 		if err != nil {
 			return nil, err
 		}
@@ -201,10 +200,10 @@ func MakeMetaChangeset(
 	}
 
 	changeset := &MetaChangeset{
-		Remote:   *remote,
+		Remote:   remote,
 		UnixTime: newCommit.Committer().When.Unix(),
 		OldShas:  parentShas,
-		Sha:      *sha,
+		Sha:      sha,
 		Changes:  changes,
 		Loc:      loc,
 		Files:    files,
