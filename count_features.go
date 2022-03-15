@@ -1,57 +1,74 @@
 package publisher
 
 import (
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
+	git "github.com/libgit2/git2go/v33"
 	ignore "github.com/sabhiram/go-gitignore"
-	"io"
 	"strings"
 )
 
 // CountFeatures counts how many lines of code, and how many files there are.
-func CountFeatures(repo *git.Repository, revision string, exclude *ignore.GitIgnore, include *ignore.GitIgnore, countLines bool) (int, int, error) {
-	tree, err := getTree(repo, revision)
-	if err != nil {
-		return -1, -1, err
+func CountFeatures(repo *git.Repository, tree *git.Tree, exclude *ignore.GitIgnore, include *ignore.GitIgnore, countLines bool) (int, int, error) {
+	var loc int
+	if countLines {
+		loc = 0
+	} else {
+		loc = -1
 	}
-	seen := make(map[plumbing.Hash]bool)
-	iter := object.NewTreeWalker(tree, true, seen)
-	var name string
-	var entry object.TreeEntry
-	loc := 0
 	files := 0
-	for err == nil {
-		name, entry, err = iter.Next()
-		if entry.Mode.IsFile() {
-			if FileIncluded(exclude, include, name) {
-				files += 1
 
-				if countLines {
-					file, err := textFile(tree, name)
-					if err != nil {
-						return -1, -1, err
-					}
-					if file != nil {
-						contents, err := file.Contents()
-						if err != nil {
-							return -1, -1, err
-						}
-						loc += lineCount(contents)
-					}
+	err := tree.Walk(func(name string, entry *git.TreeEntry) error {
+		isFile := entry.Filemode&git.FilemodeBlob != 0
+		path := strings.Join([]string{name, entry.Name}, "")
+		if isFile && fileIncluded(exclude, include, path) {
+			files += 1
+			if countLines {
+				blob, err := repo.LookupBlob(entry.Id)
+				if err != nil {
+					return err
 				}
+				contents := string(blob.Contents())
+				loc += lineCount(contents)
 			}
 		}
-	}
-	if err == io.EOF {
-		err = nil
-		iter.Close()
-	}
-	if countLines {
-		return loc, files, err
-	} else {
-		return -1, files, err
-	}
+		return nil
+	})
+
+	return loc, files, err
+	//seen := make(map[plumbing.Hash]bool)
+	//iter := object.NewTreeWalker(tree, true, seen)
+	//var name string
+	//var entry object.TreeEntry
+	//for err == nil {
+	//	name, entry, err = iter.Next()
+	//	if entry.Mode.IsFile() {
+	//		if fileIncluded(exclude, include, name) {
+	//			files += 1
+	//
+	//			if countLines {
+	//				file, err := textFile(tree, name)
+	//				if err != nil {
+	//					return -1, -1, err
+	//				}
+	//				if file != nil {
+	//					contents, err := file.Contents()
+	//					if err != nil {
+	//						return -1, -1, err
+	//					}
+	//					loc += lineCount(contents)
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
+	//if err == io.EOF {
+	//	err = nil
+	//	iter.Close()
+	//}
+	//if countLines {
+	//	return loc, files, err
+	//} else {
+	//	return -1, files, err
+	//}
 }
 
 // https://stackoverflow.com/questions/47240127/fastest-way-to-find-number-of-lines-in-go

@@ -1,8 +1,8 @@
 package publisher
 
 import (
+	git "github.com/libgit2/git2go/v33"
 	"encoding/json"
-	"github.com/go-git/go-git/v5"
 	"github.com/onsi/gomega"
 	"github.com/sabhiram/go-gitignore"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +15,7 @@ func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
 	parentShas := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
 	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, true)
 	assert.NoError(t, err)
@@ -62,7 +62,7 @@ func TestMakeMetaChangesetWithExclude(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
 	parentShas := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
 	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, true)
 	assert.NoError(t, err)
@@ -95,35 +95,54 @@ func TestMakeMetaChangesetWithExclude(t *testing.T) {
 }
 
 func TestMakeMetaChangesetWithInclude(t *testing.T) {
-	g := gomega.NewGomegaWithT(t)
+	//g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
 	parentShas := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
 	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
 	assert.NoError(t, err)
 
-	j, err := json.MarshalIndent(metaChangeset, "", "  ")
-	assert.NoError(t, err)
+	expected := &MetaChangeset{
+		Remote: "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
+		UnixTime: 1644410531,
+		ParentShas: []string{"ad2c70149ccc529ab26588cde2af1312e6aa0c06"},
+		Sha: "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+		Loc: -1,
+		Files: 1,
+		Changes: []Change{
+			{
+				FromPath: "",
+				ToPath: "testdata/b.txt",
+				LineMappings: [][]int{},
+			},
+		},
+	}
+	assert.Equal(t, expected, metaChangeset)
 
-	const expected = `{
-	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
-      "unixTime": 1644410531,
-	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
-	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
-      "loc": -1,
-      "files": 1,
-	  "changes": [
-		{
-		  "fromPath": "",
-		  "toPath": "testdata/b.txt",
-		  "lineMappings": []
-		}
-	  ]
-	}`
-
-	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
+	//j, err := json.MarshalIndent(metaChangeset, "", "  ")
+	//assert.NoError(t, err)
+	//
+	//
+	//
+	//const expected = `{
+	//  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
+    //  "unixTime": 1644410531,
+	//  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
+	//  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+    //  "loc": -1,
+    //  "files": 1,
+	//  "changes": [
+	//	{
+	//	  "fromPath": "",
+	//	  "toPath": "testdata/b.txt",
+	//	  "lineMappings": []
+	//	}
+	//  ]
+	//}`
+	//
+	//g.Ω(string(j)).Should(gomega.MatchJSON(expected))
 }
 
 func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
@@ -131,7 +150,7 @@ func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	parentShas := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	sha := "e57bfde5c3591a14c0e199c900174a08b0b94312"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
 	changeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
@@ -168,7 +187,7 @@ func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
 	parentShas := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
 	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
@@ -200,7 +219,7 @@ func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
 	parentShas := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
 	changeset, err := MakeMetaChangeset(&parentShas, &sha, false, &remote, repo, nil, nil, false)
 	assert.NoError(t, err)
@@ -231,7 +250,7 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	parentShas := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
 	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, false, nil, repo, nil, nil, false)
 	assert.NoError(t, err)

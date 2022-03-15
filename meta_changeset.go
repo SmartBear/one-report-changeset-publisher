@@ -4,10 +4,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"github.com/SmartBear/lhdiff"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/utils/merkletrie"
+	"github.com/libgit2/git2go/v33"
 	"github.com/sabhiram/go-gitignore"
 	"path/filepath"
 )
@@ -40,170 +37,172 @@ func MakeMetaChangeset(
 	include *ignore.GitIgnore,
 	includeLines bool,
 ) (*MetaChangeset, error) {
-	contextSize := 4
-
 	if exclude == nil {
-		// Ignore errors
-		worktree, _ := repo.Worktree()
-		if worktree != nil {
-			exclude, _ = ignore.CompileIgnoreFile(filepath.Join(worktree.Filesystem.Root(), ".onereportignore"))
-		}
+		exclude, _ = ignore.CompileIgnoreFile(filepath.Join(repo.Workdir(), ".onereportignore"))
 	}
 	if include == nil {
-		// Ignore errors
-		worktree, _ := repo.Worktree()
-		if worktree != nil {
-			include, _ = ignore.CompileIgnoreFile(filepath.Join(worktree.Filesystem.Root(), ".onereportinclude"))
-		}
+		include, _ = ignore.CompileIgnoreFile(filepath.Join(repo.Workdir(), ".onereportinclude"))
 	}
 
 	if remote == nil {
-		config, err := repo.Config()
+		gitRemote, err := repo.Remotes.Lookup("origin")
 		if err != nil {
-			return nil, err
-		}
-		if remoteConfig, ok := config.Remotes["origin"]; ok {
-			remote = &remoteConfig.URLs[0]
-		} else {
 			return nil, fmt.Errorf("please specify --remote since this repo does not have an origin remote")
 		}
+		remoteUrl := gitRemote.Url()
+		remote = &remoteUrl
 	}
 
-	var toHash plumbing.Hash
+	var toOid *git.Oid
+	var err error
 	if sha == nil {
 		head, err := repo.Head()
 		if err != nil {
 			return nil, err
 		}
-		toHash = head.Hash()
+		toOid = head.Target()
 	} else {
-		h, err := repo.ResolveRevision(plumbing.Revision(*sha))
+		toOid, err = git.NewOid(*sha)
 		if err != nil {
 			return nil, err
 		}
-		toHash = *h
 	}
 
-	toCommit, err := repo.CommitObject(toHash)
+	toCommit, err := repo.LookupCommit(toOid)
 	if err != nil {
 		return nil, err
 	}
-
 	toTree, err := toCommit.Tree()
 	if err != nil {
 		return nil, err
 	}
 
-	var parentShas []string
+	var parentCommits []*git.Commit
 	if explicitFromSha != nil {
-		parentShas = []string{*explicitFromSha}
+		fromOid, err := git.NewOid(*explicitFromSha)
+		if err != nil {
+			return nil, err
+		}
+		fromCommit, err := repo.LookupCommit(fromOid)
+		if err != nil {
+			return nil, err
+		}
+
+		parentCommits = append(parentCommits, fromCommit)
 	} else {
-		for _, parentHash := range toCommit.ParentHashes {
-			parentShas = append(parentShas, parentHash.String())
+		for i := uint(0); i < toCommit.ParentCount(); i++ {
+			parentCommits = append(parentCommits, toCommit.Parent(i))
 		}
 	}
 
 	changes := make([]Change, 0)
 
-	for _, fromSha := range parentShas {
-		fromTree, err := getTree(repo, fromSha)
+	for _, parentCommit := range parentCommits {
+		parentTree, err := parentCommit.Tree()
+		if err != nil {
+			return nil, err
+		}
+		diffOptions, err := git.DefaultDiffOptions()
 		if err != nil {
 			return nil, err
 		}
 
-		gitChanges, err := fromTree.Diff(toTree)
+		diff, err := repo.DiffTreeToTree(parentTree, toTree, &diffOptions)
+
+		findOpts, err := git.DefaultDiffFindOptions()
+		if err != nil {
+			return nil, err
+		}
+		err = diff.FindSimilar(&findOpts)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, gitChange := range gitChanges {
-			action, err := gitChange.Action()
-			if err != nil {
-				return nil, err
+		callback := func(hunk git.DiffHunk) (git.DiffForEachLineCallback, error) {
+			return func(line git.DiffLine) error {
+				return nil
+			}, nil
+		}
+
+		err = diff.ForEach(func(file git.DiffDelta, progress float64) (git.DiffForEachHunkCallback, error) {
+			if !fileIncluded(exclude, include, file.OldFile.Path) {
+				return callback, nil
 			}
+			if !fileIncluded(exclude, include, file.NewFile.Path) {
+				return callback, nil
+			}
+			fromPath := ""
+			toPath := ""
+			oldExists := file.OldFile.Flags&git.DiffFlagExists != 0
+			newExists := file.NewFile.Flags&git.DiffFlagExists != 0
 
-			var fromFile *object.File
-			var toFile *object.File
-
-			if action == merkletrie.Delete || action == merkletrie.Modify {
-				if !FileIncluded(exclude, include, gitChange.From.Name) {
-					continue
-				}
-				fromFile, err = textFile(fromTree, gitChange.From.Name)
-				if err != nil {
-					return nil, err
-				}
-				if fromFile == nil {
-					continue
+			if oldExists {
+				if usePaths {
+					fromPath = file.OldFile.Path
+				} else {
+					fromPath = hashString(file.OldFile.Path)
 				}
 			}
-
-			if action == merkletrie.Insert || action == merkletrie.Modify {
-				if !FileIncluded(exclude, include, gitChange.To.Name) {
-					continue
-				}
-				toFile, err = textFile(toTree, gitChange.To.Name)
-				if err != nil {
-					return nil, err
-				}
-				if toFile == nil {
-					continue
+			if newExists {
+				if usePaths {
+					toPath = file.NewFile.Path
+				} else {
+					toPath = hashString(file.NewFile.Path)
 				}
 			}
 
 			var lineMappings [][]int
 			if includeLines {
-				fromContents := ""
-				toContents := ""
+				var oldContents string
+				var newContents string
 
-				if fromFile != nil {
-					fromContents, err = fromFile.Contents()
+				if oldExists {
+					oldBlob, err := repo.LookupBlob(file.OldFile.Oid)
 					if err != nil {
 						return nil, err
 					}
+					oldContents = string(oldBlob.Contents())
+				} else {
+					oldContents = ""
 				}
-				if toFile != nil {
-					toContents, err = toFile.Contents()
+
+				if newExists {
+					newBlob, err := repo.LookupBlob(file.NewFile.Oid)
 					if err != nil {
 						return nil, err
 					}
+					newContents = string(newBlob.Contents())
+				} else {
+					newContents = ""
 				}
-
-				lineMappings, err = lhdiff.Lhdiff(fromContents, toContents, contextSize, false)
-				if err != nil {
-					return nil, err
-				}
+				lineMappings, err = lhdiff.Lhdiff(oldContents, newContents, 4, false)
 			} else {
 				lineMappings = make([][]int, 0)
 			}
-
-			var fromPath string
-			var toPath string
-			if usePaths {
-				fromPath = gitChange.From.Name
-				toPath = gitChange.To.Name
-			} else {
-				fromPath = hashString(gitChange.From.Name)
-				toPath = hashString(gitChange.To.Name)
-			}
-
 			change := Change{
 				FromPath:     fromPath,
 				ToPath:       toPath,
 				LineMappings: lineMappings,
 			}
 			changes = append(changes, change)
-		}
+
+			return callback, nil
+		}, git.DiffDetailFiles)
 	}
 
-	loc, files, err := CountFeatures(repo, *sha, exclude, include, includeLines)
+	loc, files, err := CountFeatures(repo, toTree, exclude, include, includeLines)
 	if err != nil {
 		return nil, err
 	}
 
+	parentShas := make([]string, len(parentCommits))
+	for i, parentCommit := range parentCommits {
+		parentShas[i] = parentCommit.Id().String()
+	}
+
 	changeset := &MetaChangeset{
 		Remote:     *remote,
-		UnixTime:   toCommit.Committer.When.Unix(),
+		UnixTime:   toCommit.Committer().When.Unix(),
 		ParentShas: parentShas,
 		Sha:        *sha,
 		Changes:    changes,
@@ -220,22 +219,7 @@ func hashString(s string) string {
 	return fmt.Sprintf("%x", bs)
 }
 
-func textFile(tree *object.Tree, name string) (*object.File, error) {
-	file, err := tree.File(name)
-	if err != nil {
-		return file, err
-	}
-	isBinary, err := file.IsBinary()
-	if err != nil {
-		return file, err
-	}
-	if isBinary {
-		return nil, err
-	}
-	return file, err
-}
-
-func FileIncluded(excluded *ignore.GitIgnore, included *ignore.GitIgnore, name string) bool {
+func fileIncluded(excluded *ignore.GitIgnore, included *ignore.GitIgnore, name string) bool {
 	if excluded != nil && excluded.MatchesPath(name) {
 		return false
 	}
@@ -243,22 +227,4 @@ func FileIncluded(excluded *ignore.GitIgnore, included *ignore.GitIgnore, name s
 		return false
 	}
 	return true
-}
-
-func getTree(r *git.Repository, sha string) (*object.Tree, error) {
-	h, err := r.ResolveRevision(plumbing.Revision(sha))
-	if err != nil {
-		return nil, err
-	}
-
-	commit, err := r.CommitObject(*h)
-	if err != nil {
-		return nil, err
-	}
-
-	tree, err := commit.Tree()
-	if err != nil {
-		return nil, err
-	}
-	return tree, nil
 }
