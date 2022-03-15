@@ -11,9 +11,9 @@ import (
 
 type MetaChangeset struct {
 	Remote     string   `json:"remote"`
-	UnixTime   int64    `json:"unixTime"`
-	ParentShas []string `json:"parentShas"`
-	Sha        string   `json:"sha"`
+	UnixTime int64    `json:"unixTime"`
+	OldShas  []string `json:"oldShas"`
+	Sha      string   `json:"sha"`
 	Changes    []Change `json:"changes"`
 	// The total number of lines of code in Sha (filtered by .onereportinclude and .onereportexluce
 	Loc int `json:"loc"`
@@ -22,13 +22,13 @@ type MetaChangeset struct {
 }
 
 type Change struct {
-	FromPath     string  `json:"fromPath"`
-	ToPath       string  `json:"toPath"`
+	OldPath      string  `json:"oldPath"`
+	NewPath      string  `json:"newPath"`
 	LineMappings [][]int `json:"lineMappings"`
 }
 
 func MakeMetaChangeset(
-	explicitFromSha *string,
+	oldSha *string,
 	sha *string,
 	usePaths bool,
 	remote *string,
@@ -53,52 +53,52 @@ func MakeMetaChangeset(
 		remote = &remoteUrl
 	}
 
-	var toOid *git.Oid
+	var newOid *git.Oid
 	var err error
-	if sha == nil {
+	if *sha == "" {
 		head, err := repo.Head()
 		if err != nil {
 			return nil, err
 		}
-		toOid = head.Target()
+		newOid = head.Target()
 	} else {
-		toOid, err = git.NewOid(*sha)
+		newOid, err = git.NewOid(*sha)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	toCommit, err := repo.LookupCommit(toOid)
+	newCommit, err := repo.LookupCommit(newOid)
+	if err != nil {
+		fmt.Printf("FAILED COMMIT LOOKUP")
+		return nil, err
+	}
+	newTree, err := newCommit.Tree()
 	if err != nil {
 		return nil, err
 	}
-	toTree, err := toCommit.Tree()
-	if err != nil {
-		return nil, err
-	}
 
-	var parentCommits []*git.Commit
-	if explicitFromSha != nil {
-		fromOid, err := git.NewOid(*explicitFromSha)
+	var oldCommits []*git.Commit
+	if *oldSha != "" {
+		oldOid, err := git.NewOid(*oldSha)
 		if err != nil {
 			return nil, err
 		}
-		fromCommit, err := repo.LookupCommit(fromOid)
+		oldCommit, err := repo.LookupCommit(oldOid)
 		if err != nil {
 			return nil, err
 		}
 
-		parentCommits = append(parentCommits, fromCommit)
+		oldCommits = append(oldCommits, oldCommit)
 	} else {
-		for i := uint(0); i < toCommit.ParentCount(); i++ {
-			parentCommits = append(parentCommits, toCommit.Parent(i))
+		for i := uint(0); i < newCommit.ParentCount(); i++ {
+			oldCommits = append(oldCommits, newCommit.Parent(i))
 		}
 	}
-
 	changes := make([]Change, 0)
 
-	for _, parentCommit := range parentCommits {
-		parentTree, err := parentCommit.Tree()
+	for _, oldCommit := range oldCommits {
+		oldTree, err := oldCommit.Tree()
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +107,7 @@ func MakeMetaChangeset(
 			return nil, err
 		}
 
-		diff, err := repo.DiffTreeToTree(parentTree, toTree, &diffOptions)
+		diff, err := repo.DiffTreeToTree(oldTree, newTree, &diffOptions)
 
 		findOpts, err := git.DefaultDiffFindOptions()
 		if err != nil {
@@ -131,23 +131,23 @@ func MakeMetaChangeset(
 			if !fileIncluded(exclude, include, file.NewFile.Path) {
 				return callback, nil
 			}
-			fromPath := ""
-			toPath := ""
+			oldPath := ""
+			newPath := ""
 			oldExists := file.OldFile.Flags&git.DiffFlagExists != 0
 			newExists := file.NewFile.Flags&git.DiffFlagExists != 0
 
 			if oldExists {
 				if usePaths {
-					fromPath = file.OldFile.Path
+					oldPath = file.OldFile.Path
 				} else {
-					fromPath = hashString(file.OldFile.Path)
+					oldPath = hashString(file.OldFile.Path)
 				}
 			}
 			if newExists {
 				if usePaths {
-					toPath = file.NewFile.Path
+					newPath = file.NewFile.Path
 				} else {
-					toPath = hashString(file.NewFile.Path)
+					newPath = hashString(file.NewFile.Path)
 				}
 			}
 
@@ -180,8 +180,8 @@ func MakeMetaChangeset(
 				lineMappings = make([][]int, 0)
 			}
 			change := Change{
-				FromPath:     fromPath,
-				ToPath:       toPath,
+				OldPath:      oldPath,
+				NewPath:      newPath,
 				LineMappings: lineMappings,
 			}
 			changes = append(changes, change)
@@ -190,24 +190,24 @@ func MakeMetaChangeset(
 		}, git.DiffDetailFiles)
 	}
 
-	loc, files, err := CountFeatures(repo, toTree, exclude, include, includeLines)
+	loc, files, err := CountFeatures(repo, newTree, exclude, include, includeLines)
 	if err != nil {
 		return nil, err
 	}
 
-	parentShas := make([]string, len(parentCommits))
-	for i, parentCommit := range parentCommits {
+	parentShas := make([]string, len(oldCommits))
+	for i, parentCommit := range oldCommits {
 		parentShas[i] = parentCommit.Id().String()
 	}
 
 	changeset := &MetaChangeset{
-		Remote:     *remote,
-		UnixTime:   toCommit.Committer().When.Unix(),
-		ParentShas: parentShas,
-		Sha:        *sha,
-		Changes:    changes,
-		Loc:        loc,
-		Files:      files,
+		Remote:   *remote,
+		UnixTime: newCommit.Committer().When.Unix(),
+		OldShas:  parentShas,
+		Sha:      *sha,
+		Changes:  changes,
+		Loc:      loc,
+		Files:    files,
 	}
 	return changeset, nil
 }

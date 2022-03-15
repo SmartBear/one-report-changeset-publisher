@@ -1,7 +1,7 @@
 package publisher
 
 import (
-	git "github.com/libgit2/git2go/v33"
+	"github.com/libgit2/git2go/v33"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

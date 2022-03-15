@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/SmartBear/one-report-changeset-publisher"
-	"github.com/go-git/go-git/v5"
+	"github.com/libgit2/git2go/v33"
 	"os"
 )
 
@@ -20,36 +20,36 @@ func main() {
 func doMain() error {
 	organizationId := flag.String("organization-id", "", "OneReport organization id")
 	remote := flag.String("remote", "", "Git remote (default is the origin remote in .git/config)")
-	fromRev := flag.String("from-rev", "", "From git revision (default is all the the parents of to-rev)")
-	toRev := flag.String("to-rev", "", "To git revision (default is the HEAD revision)")
+	oldSha := flag.String("old-sha", "", "Old revision (default is all the the parents of sha)")
+	sha := flag.String("sha", "", "revision (default is the HEAD revision)")
 	username := flag.String("username", "", "OneReport username")
 	password := flag.String("password", "", "OneReport password")
-	dryRun := flag.Bool("dry-run", false, "Do not publish, only print")
+	publish := flag.Bool("publish", false, "Publish the changeset")
 	usePaths := flag.Bool("use-paths", false, "Use file paths instead of hashed paths")
 	url := flag.String("url", "https://one-report.vercel.app", "OneReport url")
 	flag.Parse()
 
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	if err != nil {
 		return err
 	}
 
-	metaChangeset, err := publisher.MakeMetaChangeset(fromRev, toRev, *usePaths, remote, repo, nil, nil, true)
+	metaChangeset, err := publisher.MakeMetaChangeset(oldSha, sha, *usePaths, remote, repo, nil, nil, true)
 	if err != nil {
 		return err
 	}
-	if *dryRun {
-		bytes, err := json.MarshalIndent(metaChangeset, "", "  ")
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(bytes))
-	} else {
+	if *publish {
 		txt, err := publisher.Publish(metaChangeset, *organizationId, *url, *username, *password)
 		if err != nil {
 			return err
 		}
 		fmt.Println(txt)
+	} else {
+		bytes, err := json.MarshalIndent(metaChangeset, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(bytes))
 	}
 	return nil
 }

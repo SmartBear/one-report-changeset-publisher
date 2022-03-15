@@ -1,8 +1,8 @@
 package publisher
 
 import (
-	git "github.com/libgit2/git2go/v33"
-	ignore "github.com/sabhiram/go-gitignore"
+	"github.com/libgit2/git2go/v33"
+	"github.com/sabhiram/go-gitignore"
 	"strings"
 )
 
