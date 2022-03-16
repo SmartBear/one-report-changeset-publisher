@@ -10,11 +10,11 @@ import (
 )
 
 type MetaChangeset struct {
-	Remote     string   `json:"remote"`
+	Remote   string   `json:"remote"`
 	UnixTime int64    `json:"unixTime"`
 	OldShas  []string `json:"oldShas"`
 	Sha      string   `json:"sha"`
-	Changes    []Change `json:"changes"`
+	Changes  []Change `json:"changes"`
 	// The total number of lines of code in Sha (filtered by .onereportinclude and .onereportexluce
 	Loc int `json:"loc"`
 	// The total number of files in Sha (filtered by .onereportinclude and .onereportexluce
@@ -107,6 +107,9 @@ func MakeMetaChangeset(
 		}
 
 		diff, err := repo.DiffTreeToTree(oldTree, newTree, &diffOptions)
+		if err != nil {
+			return nil, err
+		}
 
 		findOpts, err := git.DefaultDiffFindOptions()
 		if err != nil {

@@ -34,41 +34,6 @@ func CountFeatures(repo *git.Repository, tree *git.Tree, exclude *ignore.GitIgno
 	})
 
 	return loc, files, err
-	//seen := make(map[plumbing.Hash]bool)
-	//iter := object.NewTreeWalker(tree, true, seen)
-	//var name string
-	//var entry object.TreeEntry
-	//for err == nil {
-	//	name, entry, err = iter.Next()
-	//	if entry.Mode.IsFile() {
-	//		if fileIncluded(exclude, include, name) {
-	//			files += 1
-	//
-	//			if countLines {
-	//				file, err := textFile(tree, name)
-	//				if err != nil {
-	//					return -1, -1, err
-	//				}
-	//				if file != nil {
-	//					contents, err := file.Contents()
-	//					if err != nil {
-	//						return -1, -1, err
-	//					}
-	//					loc += lineCount(contents)
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
-	//if err == io.EOF {
-	//	err = nil
-	//	iter.Close()
-	//}
-	//if countLines {
-	//	return loc, files, err
-	//} else {
-	//	return -1, files, err
-	//}
 }
 
 // https://stackoverflow.com/questions/47240127/fastest-way-to-find-number-of-lines-in-go
