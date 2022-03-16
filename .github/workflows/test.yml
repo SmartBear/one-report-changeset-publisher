@@ -21,8 +21,8 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.18.x
-      - name: build git2go
-        run: cd git2go && make install-static
+      - name: install libgit2
+        run: ./scripts/install-libgit2.sh
       - name: get dependencies
         run: go get -v -t -d ./...
       - name: test race
