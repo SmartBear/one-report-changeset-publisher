@@ -16,11 +16,11 @@ jobs:
           # the tests access prior commits.
           # https://github.com/actions/checkout#fetch-all-history-for-all-tags-and-branches
           fetch-depth: 0
-      - name: install git2go
-        run: ./scripts/install-git2go.sh
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17.x
+      - name: install git2go
+        run: ./scripts/install-git2go.sh
       - name: get dependencies
         run: go get -v -t -d ./...
       - name: test race
