@@ -20,10 +20,11 @@ jobs:
         with:
           go-version: 1.17.x
       - name: Debug
-          run: |
-            pwd
-            echo ${GOPATH}
-            echo ${GOROOT}
+        run: |
+          pwd
+          echo ${GOPATH}
+          go env GOPATH
+          echo ${GOROOT}
       - name: install git2go
         run: ./scripts/install-git2go.sh
       - name: get dependencies
