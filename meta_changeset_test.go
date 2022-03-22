@@ -2,7 +2,7 @@ package publisher
 
 import (
 	"encoding/json"
-	"github.com/go-git/go-git/v5"
+	"github.com/libgit2/git2go/v33"
 	"github.com/onsi/gomega"
 	"github.com/sabhiram/go-gitignore"
 	"github.com/stretchr/testify/assert"
@@ -13,11 +13,11 @@ import (
 func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
-	parentShas := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	oldSha := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, true)
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, nil, true)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -26,14 +26,14 @@ func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
       "unixTime": 1644410531,
-	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
+	  "oldShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
 	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": 823,
       "files": 7,
 	  "changes": [
 		{
-		  "fromPath": "",
-		  "toPath": "testdata/a.txt",
+		  "oldPath": "",
+		  "newPath": "testdata/a.txt",
 		  "lineMappings": [
 			[-1,0],
 			[-1,1],
@@ -42,8 +42,8 @@ func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 		  ]
 		},
 		{
-		  "fromPath": "",
-		  "toPath": "testdata/b.txt",
+		  "oldPath": "",
+		  "newPath": "testdata/b.txt",
 		  "lineMappings": [
 			[-1,0],
 			[-1,1],
@@ -60,11 +60,11 @@ func TestMakeMetaChangesetNoExcludeAndIgnore(t *testing.T) {
 func TestMakeMetaChangesetWithExclude(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
-	parentShas := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	oldSha := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, true)
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, ignore.CompileIgnoreLines("testdata/a.*"), nil, true)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -73,14 +73,14 @@ func TestMakeMetaChangesetWithExclude(t *testing.T) {
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
       "unixTime": 1644410531,
-	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
+	  "oldShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
 	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
       "loc": 820,
       "files": 6,
 	  "changes": [
 		{
-		  "fromPath": "",
-		  "toPath": "testdata/b.txt",
+		  "oldPath": "",
+		  "newPath": "testdata/b.txt",
 		  "lineMappings": [
 			[-1,0],
 			[-1,1],
@@ -95,45 +95,67 @@ func TestMakeMetaChangesetWithExclude(t *testing.T) {
 }
 
 func TestMakeMetaChangesetWithInclude(t *testing.T) {
-	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
-	parentShas := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	oldSha := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
 	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
-	assert.NoError(t, err)
-
-	j, err := json.MarshalIndent(metaChangeset, "", "  ")
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
 	assert.NoError(t, err)
 
-	const expected = `{
-	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
-      "unixTime": 1644410531,
-	  "parentShas": ["ad2c70149ccc529ab26588cde2af1312e6aa0c06"],
-	  "sha": "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
-      "loc": -1,
-      "files": 1,
-	  "changes": [
-		{
-		  "fromPath": "",
-		  "toPath": "testdata/b.txt",
-		  "lineMappings": []
-		}
-	  ]
-	}`
+	expected := &MetaChangeset{
+		Remote:   "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
+		UnixTime: 1644410531,
+		OldShas:  []string{"ad2c70149ccc529ab26588cde2af1312e6aa0c06"},
+		Sha:      "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+		Loc:      -1,
+		Files:    1,
+		Changes: []Change{
+			{
+				OldPath:      "",
+				NewPath:      "testdata/b.txt",
+				LineMappings: [][]int{},
+			},
+		},
+	}
+	assert.Equal(t, expected, metaChangeset)
+}
 
-	g.Ω(string(j)).Should(gomega.MatchJSON(expected))
+func TestMakeMetaChangesetWithNilOldSha(t *testing.T) {
+	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
+	oldSha := "ad2c70149ccc529ab26588cde2af1312e6aa0c06"
+	sha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	repo, err := git.OpenRepository(".")
+	assert.NoError(t, err)
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, ignore.CompileIgnoreLines("testdata/b.*"), false)
+	assert.NoError(t, err)
+
+	expected := &MetaChangeset{
+		Remote:   "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
+		UnixTime: 1644410531,
+		OldShas:  []string{"ad2c70149ccc529ab26588cde2af1312e6aa0c06"},
+		Sha:      "1ae2aabbcdd11948403578a4f2dd32911cc48a00",
+		Loc:      -1,
+		Files:    1,
+		Changes: []Change{
+			{
+				OldPath:      "",
+				NewPath:      "testdata/b.txt",
+				LineMappings: [][]int{},
+			},
+		},
+	}
+	assert.Equal(t, expected, metaChangeset)
 }
 
 func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	parentShas := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
+	oldSha := "1ae2aabbcdd11948403578a4f2dd32911cc48a00"
 	sha := "e57bfde5c3591a14c0e199c900174a08b0b94312"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	changeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false)
+	changeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -142,19 +164,19 @@ func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
       "unixTime": 1644410531,
-	  "parentShas": ["1ae2aabbcdd11948403578a4f2dd32911cc48a00"],
+	  "oldShas": ["1ae2aabbcdd11948403578a4f2dd32911cc48a00"],
 	  "sha": "e57bfde5c3591a14c0e199c900174a08b0b94312",
       "loc": -1,
       "files": 6,
 	  "changes": [
 		{
-		  "fromPath": "testdata/a.txt",
-		  "toPath": "",
+		  "oldPath": "testdata/a.txt",
+		  "newPath": "",
 		  "lineMappings": []
 		},
 		{
-		  "fromPath": "testdata/b.txt",
-		  "toPath": "testdata/b.txt",
+		  "oldPath": "testdata/b.txt",
+		  "newPath": "testdata/b.txt",
 		  "lineMappings": []
 		}
 	  ]
@@ -166,11 +188,11 @@ func TestMakeMetaChangesetWithDeleteAndModification(t *testing.T) {
 func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-metaChangeset-publisher.git"
-	parentShas := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	oldSha := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, true, &remote, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(oldSha, sha, true, remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -179,14 +201,14 @@ func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-metaChangeset-publisher.git",
       "unixTime": 1644410531,
-	  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
+	  "oldShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 	  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
       "files": 6,
 	  "changes": [
 		{
-		  "fromPath": "testdata/b.txt",
-		  "toPath": "testdata/c.txt",
+		  "oldPath": "testdata/b.txt",
+		  "newPath": "testdata/c.txt",
 		  "lineMappings": []
 		}
 	  ]
@@ -198,11 +220,11 @@ func TestMakeMetaChangesetWithMovedFile(t *testing.T) {
 func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	remote := "git@github.com:SmartBear/one-report-changeset-publisher.git"
-	parentShas := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	oldSha := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	changeset, err := MakeMetaChangeset(&parentShas, &sha, false, &remote, repo, nil, nil, false)
+	changeset, err := MakeMetaChangeset(oldSha, sha, false, remote, repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(changeset, "", "  ")
@@ -211,14 +233,14 @@ func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 	const expected = `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
       "unixTime": 1644410531,
-	  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
+	  "oldShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 	  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
       "files": 6,
 	  "changes": [
 		{
-		  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
-		  "toPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
+		  "oldPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
+		  "newPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
 		  "lineMappings": []
 		}
 	  ]
@@ -229,11 +251,11 @@ func TestMakeMetaChangesetWithHashedPaths(t *testing.T) {
 
 func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
-	parentShas := "e57bfde5c3591a14c0e199c900174a08b0b94312"
+	oldShas := "e57bfde5c3591a14c0e199c900174a08b0b94312"
 	sha := "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3"
-	repo, err := git.PlainOpen(".")
+	repo, err := git.OpenRepository(".")
 	assert.NoError(t, err)
-	metaChangeset, err := MakeMetaChangeset(&parentShas, &sha, false, nil, repo, nil, nil, false)
+	metaChangeset, err := MakeMetaChangeset(oldShas, sha, false, "", repo, nil, nil, false)
 	assert.NoError(t, err)
 
 	j, err := json.MarshalIndent(metaChangeset, "", "  ")
@@ -242,14 +264,14 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 	expected := `{
 	  "remote": "git@github.com:SmartBear/one-report-changeset-publisher.git",
       "unixTime": 1644410531,
-	  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
+	  "oldShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 	  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
       "loc": -1,
       "files": 6,
 	  "changes": [
 		{
-		  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
-		  "toPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
+		  "oldPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
+		  "newPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
 		  "lineMappings": []
 		}
 	  ]
@@ -260,14 +282,14 @@ func TestMakeMetaChangesetWithoutRemote(t *testing.T) {
 		expected = `{
 		  "remote": "https://github.com/SmartBear/one-report-changeset-publisher",
           "unixTime": 1644410531,
-		  "parentShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
+		  "oldShas": ["e57bfde5c3591a14c0e199c900174a08b0b94312"],
 		  "sha": "082022d1a8bac6a768b0fc9243f3f37ede8c0fc3",
 		  "loc": -1,
 		  "files": 6,
 		  "changes": [
 			{
-			  "fromPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
-			  "toPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
+			  "oldPath": "858458ace7ba8e65ef6427310bd96db9cbacc26d",
+			  "newPath": "d45df6aad2a7e9dc7ff0309d1a916f0d75dcad7a",
 			  "lineMappings": []
 			}
 		  ]

@@ -4,20 +4,17 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"github.com/SmartBear/lhdiff"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/utils/merkletrie"
+	"github.com/libgit2/git2go/v33"
 	"github.com/sabhiram/go-gitignore"
 	"path/filepath"
 )
 
 type MetaChangeset struct {
-	Remote     string   `json:"remote"`
-	UnixTime   int64    `json:"unixTime"`
-	ParentShas []string `json:"parentShas"`
-	Sha        string   `json:"sha"`
-	Changes    []Change `json:"changes"`
+	Remote   string   `json:"remote"`
+	UnixTime int64    `json:"unixTime"`
+	OldShas  []string `json:"oldShas"`
+	Sha      string   `json:"sha"`
+	Changes  []Change `json:"changes"`
 	// The total number of lines of code in Sha (filtered by .onereportinclude and .onereportexluce
 	Loc int `json:"loc"`
 	// The total number of files in Sha (filtered by .onereportinclude and .onereportexluce
@@ -25,190 +22,194 @@ type MetaChangeset struct {
 }
 
 type Change struct {
-	FromPath     string  `json:"fromPath"`
-	ToPath       string  `json:"toPath"`
+	OldPath      string  `json:"oldPath"`
+	NewPath      string  `json:"newPath"`
 	LineMappings [][]int `json:"lineMappings"`
 }
 
 func MakeMetaChangeset(
-	explicitFromSha *string,
-	sha *string,
+	oldSha string,
+	sha string,
 	usePaths bool,
-	remote *string,
+	remote string,
 	repo *git.Repository,
 	exclude *ignore.GitIgnore,
 	include *ignore.GitIgnore,
 	includeLines bool,
 ) (*MetaChangeset, error) {
-	contextSize := 4
-
 	if exclude == nil {
-		// Ignore errors
-		worktree, _ := repo.Worktree()
-		if worktree != nil {
-			exclude, _ = ignore.CompileIgnoreFile(filepath.Join(worktree.Filesystem.Root(), ".onereportignore"))
-		}
+		exclude, _ = ignore.CompileIgnoreFile(filepath.Join(repo.Workdir(), ".onereportignore"))
 	}
 	if include == nil {
-		// Ignore errors
-		worktree, _ := repo.Worktree()
-		if worktree != nil {
-			include, _ = ignore.CompileIgnoreFile(filepath.Join(worktree.Filesystem.Root(), ".onereportinclude"))
-		}
+		include, _ = ignore.CompileIgnoreFile(filepath.Join(repo.Workdir(), ".onereportinclude"))
 	}
 
-	if remote == nil {
-		config, err := repo.Config()
+	if remote == "" {
+		gitRemote, err := repo.Remotes.Lookup("origin")
 		if err != nil {
-			return nil, err
-		}
-		if remoteConfig, ok := config.Remotes["origin"]; ok {
-			remote = &remoteConfig.URLs[0]
-		} else {
 			return nil, fmt.Errorf("please specify --remote since this repo does not have an origin remote")
 		}
+		remote = gitRemote.Url()
 	}
 
-	var toHash plumbing.Hash
-	if sha == nil {
+	var newOid *git.Oid
+	var err error
+	if sha == "" {
 		head, err := repo.Head()
 		if err != nil {
 			return nil, err
 		}
-		toHash = head.Hash()
+		newOid = head.Target()
 	} else {
-		h, err := repo.ResolveRevision(plumbing.Revision(*sha))
+		newOid, err = git.NewOid(sha)
 		if err != nil {
 			return nil, err
 		}
-		toHash = *h
 	}
 
-	toCommit, err := repo.CommitObject(toHash)
+	newCommit, err := repo.LookupCommit(newOid)
+	if err != nil {
+		fmt.Printf("FAILED COMMIT LOOKUP")
+		return nil, err
+	}
+	newTree, err := newCommit.Tree()
 	if err != nil {
 		return nil, err
 	}
 
-	toTree, err := toCommit.Tree()
-	if err != nil {
-		return nil, err
-	}
+	var oldCommits []*git.Commit
+	if oldSha != "" {
+		oldOid, err := git.NewOid(oldSha)
+		if err != nil {
+			return nil, err
+		}
+		oldCommit, err := repo.LookupCommit(oldOid)
+		if err != nil {
+			return nil, err
+		}
 
-	var parentShas []string
-	if explicitFromSha != nil {
-		parentShas = []string{*explicitFromSha}
+		oldCommits = append(oldCommits, oldCommit)
 	} else {
-		for _, parentHash := range toCommit.ParentHashes {
-			parentShas = append(parentShas, parentHash.String())
+		for i := uint(0); i < newCommit.ParentCount(); i++ {
+			oldCommits = append(oldCommits, newCommit.Parent(i))
 		}
 	}
-
 	changes := make([]Change, 0)
 
-	for _, fromSha := range parentShas {
-		fromTree, err := getTree(repo, fromSha)
+	for _, oldCommit := range oldCommits {
+		oldTree, err := oldCommit.Tree()
+		if err != nil {
+			return nil, err
+		}
+		diffOptions, err := git.DefaultDiffOptions()
 		if err != nil {
 			return nil, err
 		}
 
-		gitChanges, err := fromTree.Diff(toTree)
+		diff, err := repo.DiffTreeToTree(oldTree, newTree, &diffOptions)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, gitChange := range gitChanges {
-			action, err := gitChange.Action()
-			if err != nil {
-				return nil, err
+		findOpts, err := git.DefaultDiffFindOptions()
+		if err != nil {
+			return nil, err
+		}
+		err = diff.FindSimilar(&findOpts)
+		if err != nil {
+			return nil, err
+		}
+
+		callback := func(hunk git.DiffHunk) (git.DiffForEachLineCallback, error) {
+			return func(line git.DiffLine) error {
+				return nil
+			}, nil
+		}
+
+		err = diff.ForEach(func(file git.DiffDelta, progress float64) (git.DiffForEachHunkCallback, error) {
+			if !fileIncluded(exclude, include, file.OldFile.Path) {
+				return callback, nil
 			}
+			if !fileIncluded(exclude, include, file.NewFile.Path) {
+				return callback, nil
+			}
+			oldPath := ""
+			newPath := ""
+			oldExists := file.OldFile.Flags&git.DiffFlagExists != 0
+			newExists := file.NewFile.Flags&git.DiffFlagExists != 0
 
-			var fromFile *object.File
-			var toFile *object.File
-
-			if action == merkletrie.Delete || action == merkletrie.Modify {
-				if !FileIncluded(exclude, include, gitChange.From.Name) {
-					continue
-				}
-				fromFile, err = textFile(fromTree, gitChange.From.Name)
-				if err != nil {
-					return nil, err
-				}
-				if fromFile == nil {
-					continue
+			if oldExists {
+				if usePaths {
+					oldPath = file.OldFile.Path
+				} else {
+					oldPath = hashString(file.OldFile.Path)
 				}
 			}
-
-			if action == merkletrie.Insert || action == merkletrie.Modify {
-				if !FileIncluded(exclude, include, gitChange.To.Name) {
-					continue
-				}
-				toFile, err = textFile(toTree, gitChange.To.Name)
-				if err != nil {
-					return nil, err
-				}
-				if toFile == nil {
-					continue
+			if newExists {
+				if usePaths {
+					newPath = file.NewFile.Path
+				} else {
+					newPath = hashString(file.NewFile.Path)
 				}
 			}
 
 			var lineMappings [][]int
 			if includeLines {
-				fromContents := ""
-				toContents := ""
+				var oldContents string
+				var newContents string
 
-				if fromFile != nil {
-					fromContents, err = fromFile.Contents()
+				if oldExists {
+					oldBlob, err := repo.LookupBlob(file.OldFile.Oid)
 					if err != nil {
 						return nil, err
 					}
+					oldContents = string(oldBlob.Contents())
+				} else {
+					oldContents = ""
 				}
-				if toFile != nil {
-					toContents, err = toFile.Contents()
+
+				if newExists {
+					newBlob, err := repo.LookupBlob(file.NewFile.Oid)
 					if err != nil {
 						return nil, err
 					}
+					newContents = string(newBlob.Contents())
+				} else {
+					newContents = ""
 				}
-
-				lineMappings, err = lhdiff.Lhdiff(fromContents, toContents, contextSize, false)
-				if err != nil {
-					return nil, err
-				}
+				lineMappings, err = lhdiff.Lhdiff(oldContents, newContents, 4, false)
 			} else {
 				lineMappings = make([][]int, 0)
 			}
-
-			var fromPath string
-			var toPath string
-			if usePaths {
-				fromPath = gitChange.From.Name
-				toPath = gitChange.To.Name
-			} else {
-				fromPath = hashString(gitChange.From.Name)
-				toPath = hashString(gitChange.To.Name)
-			}
-
 			change := Change{
-				FromPath:     fromPath,
-				ToPath:       toPath,
+				OldPath:      oldPath,
+				NewPath:      newPath,
 				LineMappings: lineMappings,
 			}
 			changes = append(changes, change)
-		}
+
+			return callback, nil
+		}, git.DiffDetailFiles)
 	}
 
-	loc, files, err := CountFeatures(repo, *sha, exclude, include, includeLines)
+	loc, files, err := CountFeatures(repo, newTree, exclude, include, includeLines)
 	if err != nil {
 		return nil, err
 	}
 
+	parentShas := make([]string, len(oldCommits))
+	for i, parentCommit := range oldCommits {
+		parentShas[i] = parentCommit.Id().String()
+	}
+
 	changeset := &MetaChangeset{
-		Remote:     *remote,
-		UnixTime:   toCommit.Committer.When.Unix(),
-		ParentShas: parentShas,
-		Sha:        *sha,
-		Changes:    changes,
-		Loc:        loc,
-		Files:      files,
+		Remote:   remote,
+		UnixTime: newCommit.Committer().When.Unix(),
+		OldShas:  parentShas,
+		Sha:      sha,
+		Changes:  changes,
+		Loc:      loc,
+		Files:    files,
 	}
 	return changeset, nil
 }
@@ -220,22 +221,7 @@ func hashString(s string) string {
 	return fmt.Sprintf("%x", bs)
 }
 
-func textFile(tree *object.Tree, name string) (*object.File, error) {
-	file, err := tree.File(name)
-	if err != nil {
-		return file, err
-	}
-	isBinary, err := file.IsBinary()
-	if err != nil {
-		return file, err
-	}
-	if isBinary {
-		return nil, err
-	}
-	return file, err
-}
-
-func FileIncluded(excluded *ignore.GitIgnore, included *ignore.GitIgnore, name string) bool {
+func fileIncluded(excluded *ignore.GitIgnore, included *ignore.GitIgnore, name string) bool {
 	if excluded != nil && excluded.MatchesPath(name) {
 		return false
 	}
@@ -243,22 +229,4 @@ func FileIncluded(excluded *ignore.GitIgnore, included *ignore.GitIgnore, name s
 		return false
 	}
 	return true
-}
-
-func getTree(r *git.Repository, sha string) (*object.Tree, error) {
-	h, err := r.ResolveRevision(plumbing.Revision(sha))
-	if err != nil {
-		return nil, err
-	}
-
-	commit, err := r.CommitObject(*h)
-	if err != nil {
-		return nil, err
-	}
-
-	tree, err := commit.Tree()
-	if err != nil {
-		return nil, err
-	}
-	return tree, nil
 }

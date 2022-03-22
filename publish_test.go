@@ -10,13 +10,13 @@ import (
 
 func ExamplePublish() {
 	changeset := &MetaChangeset{
-		Remote:     "some-remote",
-		UnixTime:   1644410531,
-		ParentShas: []string{"aaa"},
-		Sha:        "bbb",
-		Changes:    make([]Change, 0),
-		Loc:        9876,
-		Files:      31,
+		Remote:   "some-remote",
+		UnixTime: 1644410531,
+		OldShas:  []string{"aaa"},
+		Sha:      "bbb",
+		Changes:  make([]Change, 0),
+		Loc:      9876,
+		Files:    31,
 	}
 	req, err := MakeRequest(changeset, "1CCC7924-051C-496E-8467-D494C1C37B2A", "https://host.com", "anyone", "secret")
 	if err != nil {
@@ -45,7 +45,7 @@ func ExamplePublish() {
 	// {
 	//   "remote": "some-remote",
 	//   "unixTime": 1644410531,
-	//   "parentShas": [
+	//   "oldShas": [
 	//     "aaa"
 	//   ],
 	//   "sha": "bbb",
