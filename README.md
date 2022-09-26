@@ -32,7 +32,7 @@ Here is an example meta changeset:
 The `lineMappings` array is a list of 0-indexed line numbers that have changed, using a `[leftLineNumber, rightLineNumber]` mapping. 
 `-1` means the line was not present. See [lhdiff](https://github.com/SmartBear/lhdiff#readme) for more details.
 
-Note that the payload does not include any source code. Even `fromPath` and `toPath` areanonymized.
+Note that the payload does not include any source code. Even `fromPath` and `toPath` are anonymized.
 This can be turned off with the `-use-paths` option:
 
 ```json
